@@ -10,27 +10,27 @@ symbol_key = 'symbol'
 
 class Fetcher:
     def __init__(self) -> None:
-        self.table_dict = dict()
-        self.date_index_dict = dict()
+        self._table_dict = dict()
+        self._date_index_dict = dict()
         pass
 
     def register(self, key_list: list[str], csv_file_directory: str):
         try:
-            df_file = pd.read_csv('financial-ratios-20220819.csv')
+            df_file = pd.read_csv('financial-ratios-annual-20220819.csv')
         except:
             print('cannot read {}'.format(csv_file_directory))
             return
 
         for key in key_list:
-            self.table_dict.update(
+            self._table_dict.update(
                 {key: df_file.pivot(index='date', columns='symbol', values=key)})
-            self.date_index_dict.update(
-                {key: self.table_dict[key].index.tolist()})
+            self._date_index_dict.update(
+                {key: self._table_dict[key].index.tolist()})
 
     def fetch_past(self, key: str, symbol: str, query_date: datetime.date, horizon: int,
                    reverse_search_idx_hint: None | int) -> tuple[pd.Series, int]:
-        history_date = list(self.date_index_dict[key])
-        history_value = list(self.table_dict[key][symbol])
+        history_date = list(self._date_index_dict[key])
+        history_value = list(self._table_dict[key][symbol])
 
         assert len(history_date) == len(history_value)
 

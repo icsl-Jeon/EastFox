@@ -33,6 +33,10 @@ class Filter:
 @dataclass
 class Asset:
     symbol: str
+    def __eq__(self, other):
+        return self.symbol == other.symbol
+    def __hash__(self):
+        return hash(self.symbol)
 
 
 @dataclass
@@ -53,10 +57,9 @@ class Strategist:
         self.asset_pool = asset_pool
         pass
 
-    def __apply_selector_sequence(self, selector_sequence: SelectorSequence, query_date: datetime.date):
-        asset_pool = self.asset_pool
+    def __apply_selector_sequence(self, selector_sequence: SelectorSequence, query_date: datetime.date) -> list[Asset]:
+        asset_pool = self.asset_pool.copy()
         for selector in selector_sequence.selectors:
-            selected_asset = []
             asset_pool_value = pd.Series(index=[holding.symbol for holding in asset_pool], dtype=float)
 
             history_reverse_search_start = None
@@ -72,7 +75,13 @@ class Strategist:
                 else:
                     pass
 
-
+            # TODO relative handling by .rank(pct=True)
+            if isinstance(selector.value, tuple):
+                asset_pool = [Asset(symbol=symbol) for symbol in asset_pool_value[
+                    asset_pool_value.between(selector.value[0], selector.value[1])].index.tolist()]
+            else:
+                pass
+        return asset_pool
 
     def select_assets(self, filter: Filter, rebalance_date: datetime.date):
         belong_idx = -1
@@ -83,6 +92,8 @@ class Strategist:
         if (belong_idx < 0):
             print('filter time location is not valid')
             return
+
+        for filter
 
         shrink_segment = self.state[belong_idx]
         inserted_segment = Segment(start_date=rebalance_date, end_date=shrink_segment.end_date, assets=[])

@@ -33,8 +33,10 @@ class Filter:
 @dataclass
 class Asset:
     symbol: str
+
     def __eq__(self, other):
         return self.symbol == other.symbol
+
     def __hash__(self):
         return hash(self.symbol)
 
@@ -57,7 +59,7 @@ class Strategist:
         self.asset_pool = asset_pool
         pass
 
-    def __apply_selector_sequence(self, selector_sequence: SelectorSequence, query_date: datetime.date) -> list[Asset]:
+    def __apply_selector_sequence(self, selector_sequence: SelectorSequence, query_date: datetime.date) -> set[Asset]:
         asset_pool = self.asset_pool.copy()
         for selector in selector_sequence.selectors:
             asset_pool_value = pd.Series(index=[holding.symbol for holding in asset_pool], dtype=float)
@@ -81,7 +83,7 @@ class Strategist:
                     asset_pool_value.between(selector.value[0], selector.value[1])].index.tolist()]
             else:
                 pass
-        return asset_pool
+        return set(asset_pool)
 
     def select_assets(self, filter: Filter, rebalance_date: datetime.date):
         belong_idx = -1
@@ -89,14 +91,19 @@ class Strategist:
             if (segment.start_date <= rebalance_date) & (rebalance_date <= segment.end_date):
                 belong_idx = idx
                 break
-        if (belong_idx < 0):
+        if belong_idx < 0:
             print('filter time location is not valid')
             return
 
-        for filter
+        filtered_assets = set()
+        for selector_sequence in filter.selector_sequence_union:
+            assets_from_selector_sequence \
+                = self.__apply_selector_sequence(selector_sequence, rebalance_date)
+            filtered_assets = filtered_assets.union(assets_from_selector_sequence)
 
         shrink_segment = self.state[belong_idx]
-        inserted_segment = Segment(start_date=rebalance_date, end_date=shrink_segment.end_date, assets=[])
+        inserted_segment = Segment(start_date=rebalance_date, end_date=shrink_segment.end_date,
+                                   assets=list(filtered_assets))
         shrink_segment.end_date = rebalance_date
         self.state[belong_idx] = shrink_segment
         self.state.insert(belong_idx + 1, inserted_segment)

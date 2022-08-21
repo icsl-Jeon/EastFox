@@ -16,7 +16,7 @@ class Fetcher:
 
     def register(self, key_list: list[str], csv_file_directory: str):
         try:
-            df_file = pd.read_csv('financial-ratios-annual-20220819.csv')
+            df_file = pd.read_csv(csv_file_directory)
         except:
             print('cannot read {}'.format(csv_file_directory))
             return

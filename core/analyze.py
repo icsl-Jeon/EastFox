@@ -1,5 +1,8 @@
+import datetime
 from dataclasses import dataclass
+from strategy import Strategist
 import pandas as pd
+from enum import Enum
 
 DAILY_KEY = 'daily'
 WEEKLY_KEY = 'weekly'
@@ -7,9 +10,23 @@ MONTHLY_KEY = 'monthly'
 YEARLY_KEY = 'yearly'
 
 
+@dataclass
+class ReportRecipe:
+    resolution: str
+    start_date: datetime.date
+    end_date: datetime.date
+    pass
+
+
+@dataclass
+class Report:
+    pass
+
+
 class Analyst:
     def __init__(self):
         self.table_dict = dict()
+        self.strategy_account_dict = dict()
 
     def register(self, table_name: str, csv_file_directory: str):
         try:
@@ -28,7 +45,7 @@ class Analyst:
                 return
 
         except:
-            print('Could read {}'.format(csv_file_directory))
+            print('Could not read {}'.format(csv_file_directory))
             return
 
         resample_period_list = {WEEKLY_KEY: '1W', MONTHLY_KEY: '1M', YEARLY_KEY: '1Y'}
@@ -40,3 +57,12 @@ class Analyst:
             table_periods[period] = df_file.resample(resample_period_list[period]).last()
 
         self.table_dict.update({table_name: table_periods})
+
+    def attach(self, name: str, strategist: Strategist):
+        if strategist.state is None:
+            return
+        pass
+
+
+    def get_report(self, name: str, report_recipe: ReportRecipe) -> Report:
+        pass

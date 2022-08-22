@@ -47,6 +47,9 @@ class Segment:
     end_date: datetime.date
     assets: list[Asset]
 
+    def get_asset_symbol_list(self):
+        return [asset.symbol for asset in self.assets]
+
 
 class Strategist:
     def __init__(self, fetcher: Fetcher,
@@ -73,7 +76,8 @@ class Strategist:
                                                 query_date=query_date,
                                                 horizon=selector.horizon,
                                                 reverse_search_idx_hint=history_reverse_search_start)
-                    asset_pool_value[asset.symbol] = value_past_horizon.values.mean()
+                    if not value_past_horizon.empty:
+                        asset_pool_value[asset.symbol] = value_past_horizon.values.mean()
                 else:
                     pass
 

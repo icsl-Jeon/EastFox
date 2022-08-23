@@ -8,6 +8,7 @@ DAILY_KEY = 'daily'
 WEEKLY_KEY = 'weekly'
 MONTHLY_KEY = 'monthly'
 YEARLY_KEY = 'yearly'
+PRICE_KEY = 'price_list'
 
 
 @dataclass
@@ -61,8 +62,27 @@ class Analyst:
     def attach(self, name: str, strategist: Strategist):
         if strategist.state is None:
             return
-        pass
+        if not (PRICE_KEY in self.table_dict.keys()):
+            return
 
+        total_initial = 1
+        total_history = pd.Series(dtype=float)
+
+        for segment in strategist.state:
+            segment_start_date = segment.start_date
+            segment_end_date = segment.end_date
+            symbols = segment.get_asset_symbol_list()
+            table_key = DAILY_KEY
+            df_price_table = self.table_dict[PRICE_KEY][table_key]
+            df_segment_price_history = df_price_table[segment_start_date:segment_end_date][symbols]
+            df_segment_price_history.dropna(axis=1, inplace=True)
+            initial_price_list = df_segment_price_history.iloc[0]
+            holding_list = initial_price_list.apply(lambda x: total_initial / x / len(initial_price_list))
+            segment_series = df_segment_price_history.apply(lambda x: x.dot(holding_list), axis=1)
+            total_history = pd.concat([total_history, segment_series[:-1]])
+            total_initial = segment_series[-1]
+
+        self.strategy_account_dict.update({name: total_history})
 
     def get_report(self, name: str, report_recipe: ReportRecipe) -> Report:
         pass

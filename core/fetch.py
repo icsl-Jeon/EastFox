@@ -4,8 +4,12 @@ from typing import Dict
 import pandas as pd
 import datetime
 
-date_key = 'date'
-symbol_key = 'symbol'
+DATE_KEY = 'date'
+SYMBOL_KEY = 'symbol'
+
+PBR_KEY = 'priceBookValueRatio'
+PER_KEY = 'priceEarningsRatio'
+PCR_KEY = 'priceToFreeCashFlowsRatio'
 
 
 class Fetcher:
@@ -63,3 +67,6 @@ class Fetcher:
                 break
 
         return pd.Series(collected_value, index=collected_date, dtype=float), first_search_from_back
+
+    def query(self, key: str, symbols: list[str], slice_start_date: str, slice_end_date: str):
+        return self._table_dict[key][slice_start_date:slice_end_date][symbols].dropna(how='all')

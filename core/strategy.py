@@ -27,6 +27,7 @@ class SelectorSequence:
 
 @dataclass
 class Filter:
+    name: str
     selector_sequence_union: list[SelectorSequence]
 
 
@@ -52,11 +53,12 @@ class Segment:
 
 
 class Strategist:
-    def __init__(self, fetcher: Fetcher,
+    def __init__(self, name: str, fetcher: Fetcher,
                  asset_pool: list[Asset],
                  start_date: datetime.date, end_date: datetime.date) -> None:
         initial_segment = Segment(
             start_date=start_date, end_date=end_date, assets=asset_pool)
+        self.name = name
         self.fetcher = fetcher
         self.state = [initial_segment]
         self.asset_pool = asset_pool
@@ -65,26 +67,20 @@ class Strategist:
     def __apply_selector_sequence(self, selector_sequence: SelectorSequence, query_date: datetime.date) -> set[Asset]:
         asset_pool = self.asset_pool.copy()
         for selector in selector_sequence.selectors:
-            asset_pool_value = pd.Series(index=[holding.symbol for holding in asset_pool], dtype=float)
 
-            history_reverse_search_start = None
-            for asset in asset_pool:
-                if selector.type == SelectorType.HORIZON_RANGE:
-                    value_past_horizon, history_reverse_search_start = \
-                        self.fetcher.fetch_past(key=selector.key,
-                                                symbol=asset.symbol,
-                                                query_date=query_date,
-                                                horizon=selector.horizon,
-                                                reverse_search_idx_hint=history_reverse_search_start)
-                    if not value_past_horizon.empty:
-                        asset_pool_value[asset.symbol] = value_past_horizon.values.mean()
-                else:
-                    pass
+            table_dict = self.fetcher._table_dict
+            horizon_end = query_date.strftime('%Y-%m-%d')
+            horizon_start = (query_date - datetime.timedelta(days=365 * selector.horizon)).strftime('%Y-%m-%d')
+
+            symbol_list = [asset.symbol for asset in asset_pool]
+            mean_table_asset_pool: pd.Series = \
+                table_dict[selector.key][horizon_start:horizon_end][symbol_list].mean()
+            selected_assets = mean_table_asset_pool[
+                mean_table_asset_pool.between(selector.value[0], selector.value[1])].index.tolist()
 
             # TODO relative handling by .rank(pct=True)
             if isinstance(selector.value, tuple):
-                asset_pool = [Asset(symbol=symbol) for symbol in asset_pool_value[
-                    asset_pool_value.between(selector.value[0], selector.value[1])].index.tolist()]
+                asset_pool = [Asset(symbol=symbol) for symbol in selected_assets]
             else:
                 pass
         return set(asset_pool)

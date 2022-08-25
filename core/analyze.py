@@ -5,13 +5,17 @@ import pandas as pd
 from strategy import Segment
 from fetch import *
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 
 DAILY_KEY = 'daily'
 WEEKLY_KEY = 'weekly'
 MONTHLY_KEY = 'monthly'
 YEARLY_KEY = 'yearly'
 PRICE_KEY = 'price_list'
+PRICE_PCT_CHANGE_DAILY_KEY = DAILY_KEY + '_change'
+PRICE_PCT_CHANGE_MONTHLY_KEY = MONTHLY_KEY + '_change'
+PRICE_PCT_CHANGE_YEARLY_KEY = YEARLY_KEY + '_change'
+
+color_set = ['b', 'g', 'c', 'r', 'm']
 
 
 @dataclass
@@ -25,6 +29,7 @@ class ReportRecipe:
 @dataclass
 class StrategyReport:
     name: str
+    color: str
     account_history: pd.Series
     segment_list: list[Segment]
     property_dict: dict
@@ -34,7 +39,7 @@ class StrategyReport:
 class Analyst:
     def __init__(self, fetcher: Fetcher):
         self.table_dict = dict()
-        self.strategy_report_dict = dict()
+        self.strategy_report_list = list()
         self.fetcher = fetcher
 
     def register(self, table_name: str, csv_file_directory: str):
@@ -91,25 +96,60 @@ class Analyst:
             total_initial = segment_series[-1]
 
         report = StrategyReport(name=strategist.name, account_history=total_history, segment_list=strategist.state,
-                                property_dict={})
-        self.strategy_report_dict.update({strategist.name: report})
+                                property_dict={}, color=color_set[len(self.strategy_report_list)])
+
+        report.property_dict.update({})
+
+
+        self.strategy_report_list.append(report)
 
     def update_assets_property(self, property_key: str):
-        for strategy_key in self.strategy_report_dict.keys():
-            report: StrategyReport = self.strategy_report_dict[strategy_key]
-            property_values_history = []
+        for report in self.strategy_report_list:
+            property_values_history = dict()
             for segment in report.segment_list:
                 symbol_list = segment.get_asset_symbol_list()
-                property_mean_list = self.fetcher.query(key=property_key, slice_start_date=segment.start_date,
-                                                        slice_end_date=segment.end_date, symbols=symbol_list).mean()
-                property_values_history.append({segment.start_date: property_mean_list})
+                segment_start_date = segment.start_date.strftime('%Y-%m-%d')
+                segment_end_date = segment.end_date.strftime('%Y-%m-%d')
+                property_mean_list = self.fetcher.query(key=property_key, slice_start_date=segment_start_date,
+                                                        slice_end_date=segment_end_date, symbols=symbol_list).mean()
+                property_values_history.update({segment.start_date: property_mean_list})
             report.property_dict.update({property_key: property_values_history})
 
     def get_report(self, name: str, report_recipe: ReportRecipe) -> StrategyReport:
         pass
 
     def draw_price_history(self):
-        for strategy_key in self.strategy_report_dict.keys():
-            report: StrategyReport = self.strategy_report_dict[strategy_key]
-            plt.plot(report.account_history, label=report.name)
+        for report in self.strategy_report_list:
+            plt.plot(report.account_history, report.color, label=report.name, )
         plt.legend()
+
+    def draw_property_distributions(self):
+
+        report_list = self.strategy_report_list
+        if not report_list:
+            return
+        registered_property_list = list(report_list[0].property_dict.keys())
+        n_property = len(registered_property_list)
+        for n in range(n_property):
+            plt.subplot(n_property, 1, n + 1)
+
+            property_key = registered_property_list[n]
+            plt.gca().set_title(property_key)
+
+            property_distribution_list = []
+            for report in self.strategy_report_list:
+                property_distribution = []
+                property_value_series_list = list(report.property_dict[property_key].values())
+                for property_value_series in property_value_series_list:
+                    property_value_series.dropna(inplace=True)
+                    property_distribution += property_value_series.values.tolist()
+                property_distribution_list.append(property_distribution)
+
+            box_plot = plt.boxplot(property_distribution_list,
+                                   showfliers=False,
+                                   notch=True, patch_artist=True, widths=0.6);
+
+            for box, report in zip(box_plot['boxes'], self.strategy_report_list):
+                box.set_facecolor(report.color)
+
+        pass

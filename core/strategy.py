@@ -18,6 +18,7 @@ class Selector:
     key: str
     value: Union[str, tuple[float, float]]
     horizon: int
+    is_absolute: bool
 
 
 @dataclass
@@ -75,8 +76,13 @@ class Strategist:
             symbol_list = [asset.symbol for asset in asset_pool]
             mean_table_asset_pool: pd.Series = \
                 table_dict[selector.key][horizon_start:horizon_end][symbol_list].mean()
+
+            if not selector.is_absolute:
+                mean_table_asset_pool = mean_table_asset_pool.rank(pct=True)
+
             selected_assets = mean_table_asset_pool[
                 mean_table_asset_pool.between(selector.value[0], selector.value[1])].index.tolist()
+            selected_assets.sort()
 
             # TODO relative handling by .rank(pct=True)
             if isinstance(selector.value, tuple):
@@ -101,6 +107,9 @@ class Strategist:
                 = self.__apply_selector_sequence(selector_sequence, rebalance_date)
             filtered_assets = filtered_assets.union(assets_from_selector_sequence)
 
+        asset_list_sorted = [asset.symbol for asset in list(filtered_assets)]
+        asset_list_sorted.sort()
+        filtered_assets = [Asset(symbol=symbol) for symbol in asset_list_sorted]
         shrink_segment = self.state[belong_idx]
         inserted_segment = Segment(start_date=rebalance_date, end_date=shrink_segment.end_date,
                                    assets=list(filtered_assets))

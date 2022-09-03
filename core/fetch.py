@@ -1,5 +1,5 @@
 import pandas as pd
-from core.constants import TableKey
+from core.constants import TableKey, ANNUAL_TAG, QUARTER_TAG
 
 DATE_KEY: str = 'date'
 
@@ -13,7 +13,7 @@ class Fetcher:
         """
         Make pandas Dataframe (table) corresponding to keys in key_list.
         We assume that raw csv has a header contains [symbol, (date), key_list]
-        :param key_list: should be contained in the header of csv
+        :param key_list: should be contained in the header of csv (will ignore annual/quarter tag
         :param csv_file_directory: created from fmpsdk api call
         :return: true if read successful
         """
@@ -27,7 +27,8 @@ class Fetcher:
             print('no {} column exits.'.format(TableKey.Profile.SYMBOL))
             return False
 
-        if not all(x in df_file.columns.tolist() for x in key_list):
+        if not all(x in df_file.columns.tolist() for x in
+                   [key.replace(QUARTER_TAG, "").replace(ANNUAL_TAG, "") for key in key_list]):
             print('not all keys in key list in columns of csv.')
             return False
 
@@ -41,8 +42,9 @@ class Fetcher:
             df_file.index = pd.DatetimeIndex(df_file.index)
             df_file.sort_index(inplace=True)
             for key in key_list:
+                column_name = key.replace(QUARTER_TAG, "").replace(ANNUAL_TAG, "")
                 self.table_dict.update(
-                    {key: df_file.pivot(index=DATE_KEY, columns=TableKey.Profile.SYMBOL, values=key)})
+                    {key: df_file.pivot(columns=TableKey.Profile.SYMBOL, values=column_name)})
 
         else:
             df_file.index = [0] * len(df_file)

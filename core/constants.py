@@ -5,6 +5,10 @@ def get_all_sub_tables(table_key: StrEnum) -> list[str]:
     return list(vars(table_key)['_value2member_map_'].keys())
 
 
+ANNUAL_TAG = '_annual'
+QUARTER_TAG = '_quarter'
+
+
 class TableKey(StrEnum):
     MARKET_CAPITALIZATION = 'marketCap'
 
@@ -23,12 +27,21 @@ class TableKey(StrEnum):
 
     @skip
     class FinancialRatios(StrEnum):
-        PBR = 'priceBookValueRatio'
-        PER = 'priceEarningsRatio'
-        PCR = 'priceToFreeCashFlowsRatio'
-        PSR = 'priceToSalesRatio'
-        DEBT_RATIO = 'debtRatio'
-        DIVIDEND_YIELD = 'dividendYield'
+        class Annual(StrEnum):
+            PBR = 'priceBookValueRatio' + ANNUAL_TAG
+            PER = 'priceEarningsRatio' + ANNUAL_TAG
+            PCR = 'priceToFreeCashFlowsRatio' + ANNUAL_TAG
+            PSR = 'priceToSalesRatio' + ANNUAL_TAG
+            DEBT_RATIO = 'debtRatio' + ANNUAL_TAG
+            DIVIDEND_YIELD = 'dividendYield' + ANNUAL_TAG
+
+        class Quarter(StrEnum):
+            PBR = 'priceBookValueRatio' + QUARTER_TAG
+            PER = 'priceEarningsRatio' + QUARTER_TAG
+            PCR = 'priceToFreeCashFlowsRatio' + QUARTER_TAG
+            PSR = 'priceToSalesRatio' + QUARTER_TAG
+            DEBT_RATIO = 'debtRatio' + QUARTER_TAG
+            DIVIDEND_YIELD = 'dividendYield' + QUARTER_TAG
 
     @skip
     class FinancialStatements(StrEnum):

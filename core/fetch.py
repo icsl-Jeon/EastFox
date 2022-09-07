@@ -1,3 +1,5 @@
+import datetime
+
 import pandas as pd
 from core.constants import TableKey, ANNUAL_TAG, QUARTER_TAG
 
@@ -6,7 +8,7 @@ DATE_KEY: str = 'date'
 
 class Fetcher:
     def __init__(self) -> None:
-        self.table_dict = dict()
+        self._table_dict = dict()
         pass
 
     def register(self, key_list: list[TableKey], csv_file_directory: str) -> bool:
@@ -43,16 +45,32 @@ class Fetcher:
             df_file.sort_index(inplace=True)
             for key in key_list:
                 column_name = key.replace(QUARTER_TAG, "").replace(ANNUAL_TAG, "")
-                self.table_dict.update(
+                self._table_dict.update(
                     {key: df_file.pivot(columns=TableKey.Profile.SYMBOL, values=column_name)})
 
         else:
             df_file.index = [0] * len(df_file)
             for key in key_list:
-                self.table_dict.update(
+                self._table_dict.update(
                     {key: df_file.pivot(index=None, columns=TableKey.Profile.SYMBOL, values=key)})
 
         return True
 
-    # def query(self, key: str, symbols: list[str], slice_start_date: str, slice_end_date: str):
-    #     return self.table_dict[key][slice_start_date:slice_end_date][symbols].dropna(how='all')
+    def query(self, key: TableKey, symbols: list[str], horizon=None) -> pd.DataFrame | None:
+        """
+        Return table corresponding to key and symbols.
+        If horizon is provided as tuple and the key is historical table, return sliced table
+        :param key: table key
+        :param symbols:
+        :param horizon: (date_start, date_end)
+        :return:
+        """
+        if not isinstance(horizon, tuple):
+            if isinstance(self._table_dict[key].index, pd.DatetimeIndex):
+                print("Queried table is historical table, but no horizon provided! Returning 0th row.")
+            return self._table_dict[key].iloc[0][symbols]
+        else:
+            if isinstance(horizon[0], datetime.date) and isinstance(horizon[1], datetime.date):
+                return self._table_dict[key][horizon[0]:horizon[1]][symbols].dropna(how='all')
+            else:
+                return None

@@ -2,3 +2,6 @@ pandas==1.4.3
 fmpsdk
 pytictoc
 aenum
+pymysql
+sqlalchemy
+mariadb==1.1.3

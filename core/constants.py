@@ -9,21 +9,26 @@ ANNUAL_TAG = '_annual'
 QUARTER_TAG = '_quarter'
 
 
+class TableValue(StrEnum):
+    class Exchange:
+        AMEX = 'AMEX'
+        NASDAQ = 'NASDAQ'
+        NYSE = 'NYSE'
+
+
 class TableKey(StrEnum):
     MARKET_CAPITALIZATION = 'marketCap'
+    PRICE_HISTORY = 'adjClose'
+    EXCHANGE = 'exchangeShortName'
 
     @skip
     class Profile(StrEnum):
         SYMBOL = 'symbol'
         SECTOR = 'sector'
-        INDUSTRY = 'subSector'
+        INDUSTRY = 'industry'
         NAME = 'name'
-
-    @skip
-    class PriceHistory(StrEnum):
-        YEARLY = '1Y'
-        MONTHLY = '1M'
-        DAILY = '1d'
+        EXCHANGE = 'exchangeShortName'
+        TYPE = 'type'
 
     @skip
     class FinancialRatios(StrEnum):

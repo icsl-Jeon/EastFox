@@ -4,4 +4,6 @@ pytictoc
 aenum
 pymysql
 sqlalchemy
-mariadb==1.1.3
+mariadb
+distinctipy
+matplotlib

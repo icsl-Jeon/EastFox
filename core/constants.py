@@ -15,6 +15,19 @@ class TableValue(StrEnum):
         NASDAQ = 'NASDAQ'
         NYSE = 'NYSE'
 
+    class Sector:
+        INDUSTRIALS = 'Industrials'
+        HEALTH_CARE = 'Health Care'
+        INFORMATION_TECHNOLOGY = 'Information Technology'
+        COMMUNICATION_SERVICES = 'Communication Services'
+        CONSUMER_STAPLES = 'Consumer Staples'
+        CONSUMER_DISCRETIONARY = 'Consumer Discretionary'
+        UTILITIES = 'Utilities'
+        FINANCIALS = 'Financials'
+        MATERIALS = 'Materials'
+        REAL_ESTATE = 'Real Estate'
+        ENERGY = 'Energy'
+
 
 class TableKey(StrEnum):
     MARKET_CAPITALIZATION = 'marketCap'

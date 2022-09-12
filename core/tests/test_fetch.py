@@ -1,41 +1,32 @@
+import datetime
 import unittest
-from core.fetch import Fetcher
-from core.constants import *
-import pandas as pd
-from datetime import date
+from core.db_interface import DataBaseInterface
+from core.constants import TableKey
+import time
 
-
-class FetchTestCase(unittest.TestCase):
-    def setUp(self):
-        self.fetcher = Fetcher()
-        is_profile_registered = self.fetcher.register(get_all_sub_tables(TableKey.Profile),
-                                                      '../data/company-profile-20220827.csv')
-        is_financial_ratios_registered = self.fetcher.register(get_all_sub_tables(TableKey.FinancialRatios.Annual),
-                                                               '../data/financial-ratios-annual-20220819.csv') and \
-                                         self.fetcher.register(get_all_sub_tables(TableKey.FinancialRatios.Quarter),
-                                                               '../data/financial-ratios-quarter-20220820.csv')
-        is_price_history_registered = self.fetcher.register([TableKey.PriceHistory],
-                                                            '../data/price-history-20220904.csv')
-
-        self.assertTrue(is_profile_registered)
-        self.assertTrue(is_financial_ratios_registered)
-        self.assertTrue(is_price_history_registered)
-
-    def test_query(self):
-        symbols = ['MMM', 'A', 'TSLA']
-        sectors = self.fetcher.query(TableKey.Profile.SECTOR, symbols=symbols)
-        industries = self.fetcher.query(TableKey.Profile.INDUSTRY, symbols=symbols)
-
-        horizon = (date(2022, 4, 20), date(2022, 7, 20))
-        price_history = self.fetcher.query(TableKey.PriceHistory, symbols=symbols, horizon=horizon)
-
-        self.assertFalse(isinstance(price_history, pd.DataFrame))
-        self.assertFalse(isinstance(sectors, pd.DataFrame))
-        self.assertFalse(isinstance(industries, pd.DataFrame))
 
 class DbTestCase(unittest.TestCase):
     def setUp(self) -> None:
+        self.db_interface = DataBaseInterface()
 
+    def test_profile_table(self):
+        print("Getting all profiles..")
+        df_table = self.db_interface.get_profile_table(self.db_interface.get_all_symbol_list())
+        print(df_table)
+
+    def test_get_history_list(self):
+        print("Getting history")
+        table_key = TableKey.FinancialRatios.Annual.PER
+        table_key = TableKey.MARKET_CAPITALIZATION
+        start_time = time.time()
+        df_history = self.db_interface.get_history_list(table_key,
+                                                        self.db_interface.get_all_symbol_list(),
+                                                        datetime.date(1980, 1, 1),
+                                                        datetime.date(2022, 1, 1))
+        elapsed = (time.time() - start_time)
+        print(f"get history elapsed: {elapsed} sec")
+
+        print(df_history)
 
 
 if __name__ == '__main__':

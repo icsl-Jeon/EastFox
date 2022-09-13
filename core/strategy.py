@@ -6,7 +6,6 @@ import pandas as pd
 from typing import Union
 from core.db_interface import DataBaseInterface
 from core.constants import TableKey
-from line_profiler_pycharm import profile
 
 
 class SelectorType(Enum):
@@ -54,7 +53,6 @@ class Strategist:
         self._asset_pool = asset_pool
         self._fetcher = fetcher
 
-    @profile
     def __apply_selector_sequence(self, selector_sequence: SelectorSequence, query_date: datetime.date) -> set[str]:
         asset_pool = self._asset_pool.copy()
         for selector in selector_sequence.selectors:

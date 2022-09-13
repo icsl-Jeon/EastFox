@@ -104,7 +104,7 @@ class DataBaseInterface:
 
     def __init__(self):
         db_url = f"mariadb+mariadbconnector://{DB_USERNAME}:{DB_PASSWORD}@{DB_IP}:{DB_PORT}/{DB_NAME}?use_unicode=1&charset=utf8"
-        self._engine = create_engine(db_url, pool_pre_ping=True, pool_recycle=3600)
+        self._engine = create_engine(db_url, pool_pre_ping=True, pool_recycle=3600, pool_size=20)
         self._conn = self._engine.connect()
         self._table_dict = dict()
         self._meta = MetaData()
@@ -154,7 +154,8 @@ class DataBaseInterface:
                 session.commit()
             return True
 
-        except:
+        except Exception as e:
+            print({e})
             return False
 
     def __set_primary_key(self, table_name: str, key_column: str, additional_key_column=None) -> bool:
@@ -165,7 +166,8 @@ class DataBaseInterface:
         try:
             self._conn.execute(sql)
             return True
-        except:
+        except Exception as e:
+            print({e})
             return False
 
     def get_all_symbol_list(self, session=None) -> list[str]:
@@ -257,9 +259,18 @@ class DataBaseInterface:
         api_url = "/".join(url_combination)
         return call_fmp_api(table_api.version, api_url, table_api.default_param)
 
+    def __get_update_parameter(self, table_name: TableName) -> int:
+        if table_name == TableName.MARKET_CAPITALIZATION:
+            return 30
+        if table_name == TableName.DAILY_PRICE:
+            return 3
+
+        return 1
+
     def update_historical_table(self, table_name: TableName, ):
         session = scoped_session(self._session_maker)
         should_set_primary_key = not self.__is_table_exist(table_name)
+        stride = self.__get_update_parameter(table_name)
 
         symbol_list = self.get_all_symbol_list(session)
         tqdm_list = tqdm(symbol_list, leave=False)
@@ -275,21 +286,36 @@ class DataBaseInterface:
                 continue
 
             if table_name == TableName.DAILY_PRICE:
-                result_temp = []
+                result_processed = []  # NOTE price history contains item with weird size
+                target_columns = ['date', 'adjClose', 'changePercent']  # TODO constants
                 for item in result['historical']:
-                    result_temp.append({'symbol': symbol, 'date': item['date'], 'adjClose': item['adjClose'],
-                                        'volume': item['volume'], 'changePercent': item['changePercent']})
-                result = result_temp
+                    item_processed = {'symbol': symbol}
+                    try:
+                        [item_processed.update({k: item[k]}) for k in target_columns]
+                        result_processed.append(item_processed)
+                    except:  # NOTE price history contains item with weird size
+                        continue
 
+                result = result_processed
+
+            [item.update({'symbol': symbol}) for item in result]
             all_column_types = self.__get_column_types(result[0])
             columns = (Column(k, v, primary_key=(k == 'symbol' or k == 'date')) for k, v in all_column_types.items())
-            if not self.__insert_table(table_name, result, columns, session):
-                continue
+
+            batch_size = 200
+            result = result[::stride]
+            for i in range(0, len(result), batch_size):
+                if not self.__insert_table(table_name, result[i:i + batch_size], columns, session):
+                    continue
 
             if should_set_primary_key:
                 sql = f"alter table {table_name} add primary key(symbol,date)"
-                self._conn.execute(sql)
-                should_set_primary_key = False
+                try:
+                    self._conn.execute(sql)
+                    should_set_primary_key = False
+                except Exception as e:
+                    should_set_primary_key = True
+
         session.close()
 
     def __print_progress(self):
@@ -309,7 +335,7 @@ class DataBaseInterface:
             # TableName.FINANCIAL_RATIO_QUARTER, TableName.FINANCIAL_RATIO_ANNUAL,
             # TableName.CASHFLOW_ANNUAL, TableName.CASHFLOW_QUARTER,
             # TableName.BALANCE_SHEET_QUARTER, TableName.BALANCE_SHEET_ANNUAL,
-            # TableName.MARKET_CAPITALIZATION,
+            TableName.MARKET_CAPITALIZATION,
             TableName.DAILY_PRICE,
         ]
 

@@ -181,13 +181,13 @@ class DataBaseInterface:
 
         return existing_symbols
 
-    def update_profile_table(self, target_exchange_list: list) -> bool:
+    def update_profile_table(self, target_exchange_list: list, limit=50000) -> bool:
         table_name = TableName.PROFILE
         existing_symbols = self.get_all_symbol_list()
         result = call_fmp_api(3, 'stock/list', {'apikey': API_KEY})
         if len(result) == 0:
             return False
-
+        result = result[0:limit]
         all_column_types = self.__get_column_types(result[0])
         target_columns = (Column(TableKey.Profile.SYMBOL, types.VARCHAR(20), primary_key=True),
                           Column(TableKey.Profile.NAME, types.TEXT()),
@@ -328,13 +328,13 @@ class DataBaseInterface:
         if renew_profile_table:
             self.update_profile_table([TableValue.Exchange.NYSE,
                                        TableValue.Exchange.NASDAQ,
-                                       TableValue.Exchange.AMEX])
+                                       TableValue.Exchange.AMEX], limit=4000)
 
         table_list = [
-            # TableName.INCOME_STATEMENT_ANNUAL, TableName.INCOME_STATEMENT_QUARTER,
-            # TableName.FINANCIAL_RATIO_QUARTER, TableName.FINANCIAL_RATIO_ANNUAL,
-            # TableName.CASHFLOW_ANNUAL, TableName.CASHFLOW_QUARTER,
-            # TableName.BALANCE_SHEET_QUARTER, TableName.BALANCE_SHEET_ANNUAL,
+            TableName.INCOME_STATEMENT_ANNUAL, TableName.INCOME_STATEMENT_QUARTER,
+            TableName.FINANCIAL_RATIO_QUARTER, TableName.FINANCIAL_RATIO_ANNUAL,
+            TableName.CASHFLOW_ANNUAL, TableName.CASHFLOW_QUARTER,
+            TableName.BALANCE_SHEET_QUARTER, TableName.BALANCE_SHEET_ANNUAL,
             TableName.MARKET_CAPITALIZATION,
             TableName.DAILY_PRICE,
         ]
@@ -429,7 +429,7 @@ import time
 if __name__ == "__main__":
     start_time = time.time()
     db_interface = DataBaseInterface()
-    db_interface.update(renew_profile_table=False)
+    db_interface.update(renew_profile_table=True)
     elapsed = (time.time() - start_time)
     print(f"\nElapsed: {elapsed} sec")
 

@@ -54,6 +54,7 @@ def draw_sector_distribution_history_bar(position, segment: Segment, fetcher: Da
 def show_selection(strategist: Strategist, fetcher: DataBaseInterface, **kwargs):
     fontsize = kwargs.get("fontsize", 10)
     radius = kwargs.get("radius", 2)
+    title_pad = kwargs.get("titlepad", -12)
     palette = kwargs.get("palette", "cubehelix")
     labeldistacne = kwargs.get("labeldistacne", 1.2)
 
@@ -64,7 +65,7 @@ def show_selection(strategist: Strategist, fetcher: DataBaseInterface, **kwargs)
     sector_counter.sort_values()
     color_pie = [SECTOR_COLOR_MAP[sector_name] for sector_name in list(sector_counter.index)]
     sector_counter.plot.pie(colors=color_pie, radius=radius, labeldistance=labeldistacne)
-    plt.gca().set_title(strategist.name, fontsize=fontsize)
+    plt.gca().set_title(strategist.name, fontsize=fontsize, pad=title_pad)
     plt.gca().get_yaxis().set_visible(False)
 
 
@@ -82,7 +83,7 @@ def get_all_symbols_price_history(strategist: Strategist, fetcher: DataBaseInter
     total_symbols = get_all_symbols(strategist, include_initial_segment)
     df_all_price_history = fetcher.get_history_list(table_key=TableKey.PRICE_HISTORY, symbol_list=total_symbols,
                                                     from_date=strategist_start_date, to_date=strategist_end_date)
-    print(f"{len(df_all_price_history.columns)} / {len(total_symbols)} 종목이 유효한 가격히스토리를 가지고 있습니다.")
+    print(f"{len(df_all_price_history.columns)} / {len(total_symbols)} 종목이 유효한 가격 히스토리를 가지고 있습니다.")
     return df_all_price_history
 
 
@@ -109,7 +110,7 @@ def estimate_price_history(strategist: Strategist, fetcher: DataBaseInterface | 
                                         thresh=int(len(df_segment_price_history) * non_nan_ratio_for_valid_column))
         df_segment_price_history.fillna(method='ffill', inplace=True)
         df_segment_price_history.fillna(method='bfill', inplace=True)
-        is_all_rows_greater_than_zero = df_segment_price_history.gt(0).all(axis=0)
+        is_all_rows_greater_than_zero = df_segment_price_history.gt(1.0).all(axis=0)
         df_segment_price_history = df_segment_price_history[
             is_all_rows_greater_than_zero[is_all_rows_greater_than_zero].index]
 
@@ -130,22 +131,29 @@ def estimate_price_history(strategist: Strategist, fetcher: DataBaseInterface | 
     return total_history
 
 
-def analyze_impact(strategist: Strategist, fetcher: DataBaseInterface, ) -> tuple[pd.Series, pd.DataFrame]:
-    df_all_price_history = get_all_symbols_price_history(strategist, fetcher)
-    df_all_price_history_resample = df_all_price_history.resample('6D').mean()  # TODO param
+def analyze_leaders(strategist: Strategist, fetcher: pd.DataFrame, draw_heatmap=False, annotation_param=dict()) -> \
+        tuple[pd.DataFrame, pd.DataFrame]:
+    return_ratio_matrix = []
+    symbol_matrix = []
+    for segment in strategist.state[1:-1]:
+        symbols = segment.assets
+        symbols_with_price = [symbol for symbol in symbols if symbol in fetcher.columns]
+        df_segment_price_history = fetcher[segment.start_date:segment.end_date][
+            symbols_with_price]
+        return_ratio_segment = (df_segment_price_history.iloc[-1] - df_segment_price_history.iloc[0]) / \
+                               df_segment_price_history.iloc[0]
+        return_ratio_segment.sort_values(ascending=False, inplace=True)
+        top_leaders = return_ratio_segment.iloc[0:10]
+        return_ratio_matrix.append(list(top_leaders.values))
+        symbol_matrix.append(list(top_leaders.index))
 
-    averaged_accumulation = pd.Series(index=df_all_price_history_resample.columns, dtype=float)
-    for column in df_all_price_history_resample:
-        column_series = df_all_price_history_resample[column]
-        valid_horizon_start = column_series.first_valid_index()
-        valid_horizon_end = column_series.last_valid_index()
-        initial_value = column_series[valid_horizon_end]
-        column_series /= initial_value
-        if (valid_horizon_end - valid_horizon_start).days > 1:
-            integration = column_series.sum() / (valid_horizon_end - valid_horizon_start).days
-            averaged_accumulation[column] = integration
+    df_leader_symbol = pd.DataFrame(symbol_matrix, index=[segment.start_date for segment in strategist.state[1:-1]])
+    df_leader_return_ratio = pd.DataFrame(return_ratio_matrix,
+                                          index=[segment.start_date for segment in strategist.state[1:-1]])
+    if draw_heatmap:
+        sns.heatmap(df_leader_return_ratio, annot=df_leader_symbol, fmt='', annot_kws=annotation_param)
 
-    return averaged_accumulation, df_all_price_history_resample
+    return df_leader_symbol, df_leader_return_ratio
 
 
 def prepare_canvas(**kwargs):
@@ -154,3 +162,93 @@ def prepare_canvas(**kwargs):
     plt.rcParams.update({'font.size': kwargs.get("fontsize", 14)})
     plt.rcParams['font.family'] = kwargs.get("fontfamily", 'Malgun Gothic')
     plt.rcParams['axes.unicode_minus'] = False
+
+
+def show_sector_distribution_history(strategist: Strategist, db_interface: DataBaseInterface):
+    start_date = strategist.state[0].start_date
+    end_date = strategist.state[-1].end_date
+
+    n_tick = int(len(strategist.state) * 0.6)
+    tick_dates = pd.date_range(start=start_date,
+                               end=end_date,
+                               periods=n_tick)
+
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+    plt.xticks(tick_dates)
+    plt.xticks(rotation=60)
+
+    for idx, segment in enumerate(strategist.state[1:]):
+        sector_counts = extract_sector_count_from_segment(segment, db_interface)
+        bottom = 0
+        bar_width = (segment.end_date - segment.start_date) * 0.8
+        bar_x = segment.start_date + (segment.end_date - segment.start_date) / 2
+        for index, sector in sector_counts.items():
+            try:
+                color = SECTOR_COLOR_MAP[index]
+                height = sector
+                if idx == 0:
+                    plt.bar(bar_x, height, bottom=bottom, color=color, width=bar_width, label=index)
+                else:
+                    plt.bar(bar_x, height, bottom=bottom, color=color, width=bar_width)
+
+                bottom += height
+            except:
+                continue
+        if idx == 0:
+            handles, labels = plt.gca().get_legend_handles_labels()
+            plt.gca().legend(handles[::-1], labels[::-1], loc='upper left', title='Sector')
+
+
+import numpy as np
+
+
+def get_mdd(price_history: pd.Series):
+    x = list(price_history.values)
+    arr_v = np.array(x)
+    peak_lower = np.argmax(np.maximum.accumulate(arr_v) - arr_v)
+    peak_upper = np.argmax(arr_v[:peak_lower])
+    return (arr_v[peak_lower] - arr_v[peak_upper]) / arr_v[peak_upper]
+
+
+def compute_analysis_series(price_history: pd.Series, series_name: str) -> pd.Series:
+    mdd = int(get_mdd(price_history) * 100)
+
+    last = price_history[price_history.last_valid_index()]
+    first = price_history[price_history.first_valid_index()]
+    return_ratio = int((last - first) / first * 100)
+
+    monthly_pct_change = price_history.resample('1M').last().pct_change()
+    winning_month_ratio = int(monthly_pct_change.gt(0).sum() / len(monthly_pct_change) * 100)
+
+    data = {'최종 수익률': return_ratio,
+            '최대하락폭': mdd,
+            '오른 달 비율': winning_month_ratio}
+
+    return pd.Series(data=data, name=series_name)
+
+
+def show_comparative_report(strategist_list: list[Strategist], df_all_price_history: pd.DataFrame):
+    price_history_dict = \
+        {strategist.name: estimate_price_history(strategist, df_all_price_history)
+         for strategist in strategist_list}
+
+    prepare_canvas(fontsize=12)
+
+    period = '6M'
+    colors = generate_sector_color(list(price_history_dict.keys()), "husl")
+    series_list = []
+    for k, v in price_history_dict.items():
+        plt.subplot(2, 1, 1)
+        plt.plot(v, label=k, color=colors[k])
+        x_lim = plt.gca().get_xlim()
+        plt.title('잔고의 변화 (초기 = 1원)')
+        plt.legend()
+
+        plt.subplot(2, 1, 2)
+        pct_change = v.resample(period).last().pct_change() * 100
+        plt.plot(pct_change, 'o-', color=colors[k], markersize=4, linewidth=0.8)
+        plt.title(f'{period[:-1]}개월 수익률 (%)')
+        plt.gca().set_xlim(x_lim)
+
+        series_list.append(compute_analysis_series(v, k))
+    return pd.concat(series_list, axis=1)

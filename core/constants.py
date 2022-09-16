@@ -15,18 +15,19 @@ class TableValue(StrEnum):
         NASDAQ = 'NASDAQ'
         NYSE = 'NYSE'
 
-    class Sector:
-        INDUSTRIALS = 'Industrials'
-        HEALTH_CARE = 'Health Care'
-        INFORMATION_TECHNOLOGY = 'Information Technology'
+    class Sector(StrEnum):
+        BASIC_MATERIALS = 'Basic Materials'
         COMMUNICATION_SERVICES = 'Communication Services'
-        CONSUMER_STAPLES = 'Consumer Staples'
-        CONSUMER_DISCRETIONARY = 'Consumer Discretionary'
-        UTILITIES = 'Utilities'
-        FINANCIALS = 'Financials'
-        MATERIALS = 'Materials'
-        REAL_ESTATE = 'Real Estate'
+        SERVICES = 'Services'
+        CONSUMER_CYCLICAL = 'Consumer Cyclical'
+        CONSUMER_DEFENSIVE = 'Consumer Defensive'
         ENERGY = 'Energy'
+        FINANCIAL_SERVICES = 'Financial Services'
+        HEALTHCARE = 'Healthcare'
+        INDUSTRIALS = 'Industrials'
+        REAL_ESTATE = 'Real Estate'
+        TECHNOLOGY = 'Technology'
+        UTILITIES = 'Utilities'
 
 
 class TableKey(StrEnum):

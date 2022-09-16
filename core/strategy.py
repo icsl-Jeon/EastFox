@@ -59,7 +59,7 @@ class Strategist:
 
             if selector.type == SelectorType.PROFILE:
                 df_profile: pd.DataFrame = self._fetcher.get_profile_list(selector.key, asset_pool)
-                df_profile_selected: pd.DataFrame = df_profile.loc[df_profile[selector.key] == selector.value]
+                df_profile_selected: pd.DataFrame = df_profile.loc[df_profile[selector.key].isin(selector.value)]
                 asset_pool = (df_profile_selected[TableKey.Profile.SYMBOL]).tolist()
 
             elif selector.type == SelectorType.HORIZON_RANGE:

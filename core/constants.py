@@ -9,21 +9,40 @@ ANNUAL_TAG = '_annual'
 QUARTER_TAG = '_quarter'
 
 
+class TableValue(StrEnum):
+    class Exchange:
+        AMEX = 'AMEX'
+        NASDAQ = 'NASDAQ'
+        NYSE = 'NYSE'
+
+    class Sector(StrEnum):
+        BASIC_MATERIALS = 'Basic Materials'
+        COMMUNICATION_SERVICES = 'Communication Services'
+        SERVICES = 'Services'
+        CONSUMER_CYCLICAL = 'Consumer Cyclical'
+        CONSUMER_DEFENSIVE = 'Consumer Defensive'
+        ENERGY = 'Energy'
+        FINANCIAL_SERVICES = 'Financial Services'
+        HEALTHCARE = 'Healthcare'
+        INDUSTRIALS = 'Industrials'
+        REAL_ESTATE = 'Real Estate'
+        TECHNOLOGY = 'Technology'
+        UTILITIES = 'Utilities'
+
+
 class TableKey(StrEnum):
     MARKET_CAPITALIZATION = 'marketCap'
+    PRICE_HISTORY = 'adjClose'
+    EXCHANGE = 'exchangeShortName'
 
     @skip
     class Profile(StrEnum):
         SYMBOL = 'symbol'
         SECTOR = 'sector'
-        INDUSTRY = 'subSector'
+        INDUSTRY = 'industry'
         NAME = 'name'
-
-    @skip
-    class PriceHistory(StrEnum):
-        YEARLY = '1Y'
-        MONTHLY = '1M'
-        DAILY = '1d'
+        EXCHANGE = 'exchangeShortName'
+        TYPE = 'type'
 
     @skip
     class FinancialRatios(StrEnum):
@@ -45,13 +64,22 @@ class TableKey(StrEnum):
 
     @skip
     class FinancialStatements(StrEnum):
-        @skip
         class BalanceSheet(StrEnum):
-            TOTAL_DEBT = 'totalDebt'
+            class Annual(StrEnum):
+                TOTAL_DEBT = 'totalDebt' + ANNUAL_TAG
 
-        @skip
+            class Quarter(StrEnum):
+                TOTAL_DEBT = 'totalDebt' + QUARTER_TAG
+
         class IncomeStatement(StrEnum):
-            NET_INCOME = 'netIncome'
-            GROSS_PROFIT = 'grossProfit'
-            REVENUE = 'revenue'
-            EBITDA = 'ebitda'
+            class Annual(StrEnum):
+                NET_INCOME = 'netIncome' + ANNUAL_TAG
+                GROSS_PROFIT = 'grossProfit' + ANNUAL_TAG
+                REVENUE = 'revenue' + ANNUAL_TAG
+                EBITDA = 'ebitda' + ANNUAL_TAG
+
+            class Quarter(StrEnum):
+                NET_INCOME = 'netIncome' + QUARTER_TAG
+                GROSS_PROFIT = 'grossProfit' + QUARTER_TAG
+                REVENUE = 'revenue' + QUARTER_TAG
+                EBITDA = 'ebitda' + QUARTER_TAG

@@ -2,3 +2,8 @@ pandas==1.4.3
 fmpsdk
 pytictoc
 aenum
+pymysql
+sqlalchemy
+mariadb
+distinctipy
+matplotlib

@@ -432,7 +432,7 @@ class DataBaseInterface:
 
         table_list = [
             # TableName.INCOME_STATEMENT_ANNUAL, TableName.INCOME_STATEMENT_QUARTER,
-            TableName.FINANCIAL_RATIO_QUARTER, TableName.FINANCIAL_RATIO_ANNUAL,
+            # TableName.FINANCIAL_RATIO_QUARTER, TableName.FINANCIAL_RATIO_ANNUAL,
             # TableName.CASHFLOW_ANNUAL, TableName.CASHFLOW_QUARTER,
             # TableName.BALANCE_SHEET_QUARTER, TableName.BALANCE_SHEET_ANNUAL,
             TableName.MARKET_CAPITALIZATION,
@@ -450,7 +450,7 @@ class DataBaseInterface:
 
         table_pct_change_list = [
             TableName.MARKET_CAPITALIZATION,
-            TableName.FINANCIAL_RATIO_QUARTER, TableName.FINANCIAL_RATIO_ANNUAL,
+            # TableName.FINANCIAL_RATIO_QUARTER, TableName.FINANCIAL_RATIO_ANNUAL,
             # TableName.DAILY_PRICE + ONE_WEEK_AVERAGE_TAG,
             # TableName.DAILY_PRICE + ONE_MONTH_AVERAGE_TAG,
             # TableName.DAILY_PRICE + THREE_MONTH_AVERAGE_TAG,

@@ -7,3 +7,5 @@ sqlalchemy
 mariadb
 distinctipy
 matplotlib
+django
+djangorestframework

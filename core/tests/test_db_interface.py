@@ -46,8 +46,17 @@ class FetchSimulation(unittest.TestCase):
         t.tic()
         df_table_output = \
             self.db_interface.get_history_list(table_key=table_key, symbol_list=['A'],
-                                               from_date='2000-01-01',to_date='2010-01-01')
+                                               from_date='2000-01-01', to_date='2010-01-01')
         t.toc()
+
+    def test_marget_cap(self):
+        initial_symbols = self.db_interface.get_stock_on_exchange(self.exchange_pool)
+        mega_market_cap_stock_list = self.db_interface.past_average_filter(initial_symbols,
+                                                                           TableKey.MARKET_CAPITALIZATION,
+                                                                           date(2020, 1, 1), date(2022, 8, 15), 0.9,
+                                                                           1.0,
+                                                                           False, False)
+        print(self.db_interface.get_profile_table(mega_market_cap_stock_list))
 
 
 if __name__ == '__main__':

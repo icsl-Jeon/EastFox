@@ -14,7 +14,7 @@ import time
 class CentileSimulation(unittest.TestCase):
     def setUp(self) -> None:
         self.db_interface = DataBaseInterface()
-        self.exchange_pool = ['NYSE','NASDAQ']
+        self.exchange_pool = ['NYSE', 'NASDAQ']
         self.horizon = (date(2000, 1, 1), date(2022, 8, 22))
         self.n_division = 5
         self.freq = '6M'
@@ -46,12 +46,34 @@ class CentileSimulation(unittest.TestCase):
             strategist = Strategist(fetcher=self.db_interface, name=strategist_name, asset_pool=initial_symbols,
                                     start_date=self.horizon[0], end_date=self.horizon[1])
             for rebalance_date in rebalance_dates:
-                start_time = time.time()
+                # start_time = time.time()
                 strategist.apply_filter(filter_in=filter_, date_in=rebalance_date.date())
-                elapsed = (time.time() - start_time)
-                print(f"\nApplying filter elapsed: {elapsed} sec")
+                # elapsed = (time.time() - start_time)
+                # print(f"\nApplying filter elapsed: {elapsed} sec")
 
             strategist_list.append(strategist)
+
+    def test_market_cap(self):
+        target_key = TableKey.MARKET_CAPITALIZATION
+        lookback_year = 1
+        selector_sequences = SelectorSequence(
+            selectors=[Selector(type=SelectorType.HORIZON_RANGE, key=TableKey.MARKET_CAPITALIZATION,
+                                value=(0.9, 1.0),
+                                horizon=1,
+                                is_absolute=False),
+                       ])
+
+        my_filter = Filter(selector_sequence_union=[selector_sequences], name="my filter")
+        initial_symbols = self.db_interface.get_stock_on_exchange(self.exchange_pool)
+        rebalance_dates = pd.date_range(self.horizon[0], self.horizon[1], freq=self.freq, inclusive='both')
+
+        strategist = Strategist(fetcher=self.db_interface, name="mega cap", asset_pool=initial_symbols,
+                                start_date=self.horizon[0], end_date=self.horizon[1])
+        for rebalance_date in rebalance_dates:
+            strategist.apply_filter(filter_in=my_filter, date_in=rebalance_date.date())
+
+        df_asset_selection = strategist.show_asset_selection()
+        print(df_asset_selection.sort_values(ascending=False))
 
 
 if __name__ == '__main__':

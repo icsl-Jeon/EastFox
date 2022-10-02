@@ -35,8 +35,6 @@ def extract_sector_count_from_segment(segment: Segment, fetcher: DataBaseInterfa
     sector_count = \
         profile_in_state.groupby([TableKey.Profile.SECTOR]).count()[TableKey.Profile.SYMBOL]
     sector_count = sector_count[sector_count > 1]
-    sector_count /= sector_count.sum()
-    sector_count *= 100
     sector_count.sort_index()
     return sector_count
 
@@ -131,14 +129,14 @@ def estimate_price_history(strategist: Strategist, fetcher: DataBaseInterface | 
     return total_history
 
 
-def analyze_leaders(strategist: Strategist, fetcher: pd.DataFrame, draw_heatmap=False, annotation_param=dict()) -> \
+def analyze_leaders(strategist: Strategist, df_data_history: pd.DataFrame, draw_heatmap=False, annotation_param=dict()) -> \
         tuple[pd.DataFrame, pd.DataFrame]:
     return_ratio_matrix = []
     symbol_matrix = []
     for segment in strategist.state[1:-1]:
         symbols = segment.assets
-        symbols_with_price = [symbol for symbol in symbols if symbol in fetcher.columns]
-        df_segment_price_history = fetcher[segment.start_date:segment.end_date][
+        symbols_with_price = [symbol for symbol in symbols if symbol in df_data_history.columns]
+        df_segment_price_history = df_data_history[segment.start_date:segment.end_date][
             symbols_with_price]
         return_ratio_segment = (df_segment_price_history.iloc[-1] - df_segment_price_history.iloc[0]) / \
                                df_segment_price_history.iloc[0]

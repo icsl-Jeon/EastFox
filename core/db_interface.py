@@ -73,6 +73,7 @@ class TableName(StrEnum):
     CASHFLOW_QUARTER = "cashflow_quarter"
     MARKET_CAPITALIZATION = "market_capitalization"
     DAILY_PRICE = "daily_price"
+    COMPANY_RATING = "company_rating"
 
 
 @dataclass
@@ -107,6 +108,9 @@ FMP_API = dict({
         CallArgument(3, 'historical-market-capitalization', True, {'limit': -1, 'apikey': API_KEY}),
     TableName.DAILY_PRICE:
         CallArgument(3, 'historical-price-full', True, {'from': START_DATE, 'apikey': API_KEY}),
+    TableName.COMPANY_RATING:
+        CallArgument(4, 'upgrades-downgrades', True, {'apikey': API_KEY}),
+
 })
 
 
@@ -290,6 +294,8 @@ class DataBaseInterface:
             return datetime.timedelta(days=30 * 6)
         elif table_name == TableName.DAILY_PRICE:
             return datetime.timedelta(days=3)
+        elif table_name == TableName.COMPANY_RATING:
+            return datetime.timedelta(days=30 * 2)
         else:
             return datetime.timedelta(days=30 * 1)
 
@@ -299,7 +305,10 @@ class DataBaseInterface:
 
         url_combination = [query_url_base, ]
         if table_api.symbol_required:
-            url_combination.append(symbol)
+            if table_api.version == 3:
+                url_combination.append(symbol)
+            else:
+                table_api.default_param.update({'symbol': symbol})
         api_url = "/".join(url_combination)
         if from_date and 'from' in table_api.default_param.keys():
             table_api.default_param['from'] = from_date
@@ -318,6 +327,31 @@ class DataBaseInterface:
                 continue
 
         return result_processed
+
+    def __process_company_rating_fmp_output(self, result: list[dict]) -> list[dict]:
+        RATING_TO_SCORE_DICT = {'Equal-Weight': 3, 'Overweight': 2, 'Buy': 4, 'Outperform': 4, 'Strong Buy': 5,
+                                'Sell': 1, 'Negative': 2, 'Accumulate': 3, 'Underweight': 4, 'Sector Perform': 3,
+                                'Market Perform': 3, 'Neutral': 3, 'Cautious': 2, 'Underperform': 2, 'Hold': 3,
+                                'Peer Perform': 3, 'Perform': 4, 'Positive': 4, 'Conviction Buy': 5, 'Mixed': 3,
+                                'Sector Overweight': 4, 'Sector Underweight': 2, 'Reduce': 1, 'Market Outperform': 5,
+                                'Top Pick': 5, 'Strong Sell': 1, 'In-Line': 3, 'Sector Weight': 3}
+        ACTION_TO_SCORE_DICT = {'downgrade': 1, 'hold': 2, 'upgrade': 3, 'initialise': 2}
+        try:
+            result_new = [{'symbol': item['symbol'],
+                           'date': datetime.datetime.strptime(item['publishedDate'][0:10], '%Y-%m-%d').date(),
+                           'ratingRaw': item['newGrade'],
+                           'ratingScored': RATING_TO_SCORE_DICT[item['newGrade']],
+                           'actionRaw': item['action'],
+                           'actionScored': ACTION_TO_SCORE_DICT[item['action']],
+                           } for item in result
+                          if item['newGrade'] in RATING_TO_SCORE_DICT.keys() and
+                          item['action'] in ACTION_TO_SCORE_DICT.keys()]
+            if len(result_new) == 0:
+                print(f"Empty list returned after processing company rating {result}")
+            return result_new
+        except Exception as e:
+            print(f"key error: {e}")
+            return list()
 
     def __get_update_stride_parameter(self, table_name: TableName) -> int:
         if table_name == TableName.MARKET_CAPITALIZATION:
@@ -339,7 +373,8 @@ class DataBaseInterface:
                          'already_latest': 0,
                          'no_data_from_fmp': 0,
                          'new_update_success': 0,
-                         'sql_execute_failure': 0}
+                         'sql_execute_failure': 0,
+                         'cannot_process_from_raw_fmp': 0}
 
         for symbol in tqdm_list:
             latest_date = self.__get_latest_date_in_table(table_name, symbol, session)
@@ -352,12 +387,19 @@ class DataBaseInterface:
                 update_status['no_data_from_fmp'] += 1
                 continue
 
+            if table_name == TableName.DAILY_PRICE:
+                result = self.__process_price_history_fmp_output(result)
+
+            if table_name == TableName.COMPANY_RATING:
+                result = self.__process_company_rating_fmp_output(result)
+
+            if len(result) == 0:
+                update_status['cannot_process_from_raw_fmp'] += 1
+                continue
+
             if result[0]['date'] == latest_date.strftime("%Y-%m-%d"):
                 update_status['already_latest'] += 1  # FMP latest older than today
                 continue
-
-            if table_name == TableName.DAILY_PRICE:
-                result = self.__process_price_history_fmp_output(result)
 
             result = result[::-1]
             [item.update({'symbol': symbol}) for item in result]
@@ -432,12 +474,14 @@ class DataBaseInterface:
 
         table_list = [
             # TableName.INCOME_STATEMENT_ANNUAL, TableName.INCOME_STATEMENT_QUARTER,
-            TableName.FINANCIAL_RATIO_QUARTER, TableName.FINANCIAL_RATIO_ANNUAL,
+            # TableName.FINANCIAL_RATIO_QUARTER, TableName.FINANCIAL_RATIO_ANNUAL,
             # TableName.CASHFLOW_ANNUAL, TableName.CASHFLOW_QUARTER,
             # TableName.BALANCE_SHEET_QUARTER, TableName.BALANCE_SHEET_ANNUAL,
-            TableName.MARKET_CAPITALIZATION,
+            # TableName.MARKET_CAPITALIZATION,
             # TableName.DAILY_PRICE,
+            # TableName.COMPANY_RATING
         ]
+
         if len(table_list) > 0:
             with ThreadPoolExecutor(len(table_list)) as executor:
                 executor.map(self.download_and_update_raw_historical_table, table_list)
@@ -449,13 +493,17 @@ class DataBaseInterface:
             self.update_resampled_historical_table(table_name=table_resample)
 
         table_pct_change_list = [
-            TableName.MARKET_CAPITALIZATION,
-            TableName.FINANCIAL_RATIO_QUARTER, TableName.FINANCIAL_RATIO_ANNUAL,
+            # TableName.MARKET_CAPITALIZATION,
+            # TableName.INCOME_STATEMENT_ANNUAL, TableName.INCOME_STATEMENT_QUARTER,
+            # TableName.CASHFLOW_ANNUAL, TableName.CASHFLOW_QUARTER,
+            # TableName.FINANCIAL_RATIO_QUARTER, TableName.FINANCIAL_RATIO_ANNUAL,
             # TableName.DAILY_PRICE + ONE_WEEK_AVERAGE_TAG,
             # TableName.DAILY_PRICE + ONE_MONTH_AVERAGE_TAG,
             # TableName.DAILY_PRICE + THREE_MONTH_AVERAGE_TAG,
             # TableName.DAILY_PRICE + SIX_MONTH_AVERAGE_TAG,
+            TableName.COMPANY_RATING
         ]
+
         if len(table_pct_change_list) > 0:
             with ThreadPoolExecutor(len(table_pct_change_list)) as executor:
                 executor.map(self.update_pct_change_historical_table, table_pct_change_list)
@@ -572,6 +620,10 @@ class DataBaseInterface:
         session.close()
 
         df_result = pd.DataFrame(result)
+
+        if len(df_result) == 0:
+            print(f"While querying {table_key} from {from_date} to {to_date}, fetching result is empty.")
+            return list()
         return list(df_result[TableKey.Profile.SYMBOL])
 
     def __get_historical_table_on_symbol(self, table_name: TableName, symbol: str, session=None) -> pd.DataFrame | None:
@@ -609,6 +661,10 @@ class DataBaseInterface:
         return df_result
 
     def update_pct_change_historical_table(self, table_name: TableName):
+
+        numeric_columns = [str(column.name) for column in self._meta.tables[table_name].c if
+                           column.type.python_type == float]
+
         session = scoped_session(self._session_maker)
         new_table_name = table_name + CHANGE_RATE_TAG
 
@@ -641,13 +697,11 @@ class DataBaseInterface:
                 update_status['no_valid_row_after_processing'] += 1
                 continue
 
-            numeric_columns = [column for column in df_result.columns if
-                               is_numeric_dtype(df_result[column])]
-
             df_change_symbol = pd.concat(
                 [df_result['symbol']] +
                 [df_result[numeric_column].pct_change() for numeric_column in
                  numeric_columns], axis=1)
+            df_change_symbol.replace([np.inf, -np.inf, np.nan], None, inplace=True)
             df_change_symbol = df_change_symbol.iloc[1:]  # first row of pct_change is None
             df_change_symbol.index = df_change_symbol.index.strftime("%Y-%m-%d")
 

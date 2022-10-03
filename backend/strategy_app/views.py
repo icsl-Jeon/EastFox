@@ -1,25 +1,33 @@
-from django.shortcuts import render
-from django.http import HttpResponse
+import datetime
+from .models import Strategist
+from .serializers import StrategistSerializer
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 import sys
 
 sys.path.append('../')  # TODO: valid only when we start server at backend folder
+from .apps import db_interface
 
-from core.strategy import Strategist
-
-STRATEGIST = 'strategist'
+STRATEGIST = "strategist"
 
 
+@api_view(['GET'])
 def connect_check(request):
-    return HttpResponse("You're reaching connection check url.")
+    return Response("You're reaching connection check url.")
 
 
+@api_view(['GET'])
 def create_strategist(request):
-    request.session[STRATEGIST] = True
-    return HttpResponse("Strategist was created!")
+    def parse_request(reqeust_input) -> Strategist:
+        asset_pool = reqeust_input.GET.getlist("asset_pool", [])
+        from_date = reqeust_input.GET.get('from_date')
+        to_date = reqeust_input.GET.get('to_date')
+        name = reqeust_input.GET.get('name')
+        strategist = Strategist(asset_pool=asset_pool, from_date=from_date, to_date=to_date, name=name)
+        return strategist
 
+    strategist = parse_request(request)
+    request.session[STRATEGIST] = StrategistSerializer(strategist, many=False).data
 
-def apply_filter_to_strategist(request):
-    if not request.session.get(STRATEGIST, None):
-        return HttpResponse("Your session does not have strategist yet.")
-    else:
-        return HttpResponse(f"Your session has strategist! value = {request.session.get(STRATEGIST, None)}")
+    return Response(request.session[STRATEGIST])

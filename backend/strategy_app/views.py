@@ -27,7 +27,19 @@ def create_strategist(request):
         strategist = Strategist(asset_pool=asset_pool, from_date=from_date, to_date=to_date, name=name)
         return strategist
 
+    if STRATEGIST in request.session.keys():
+        Response(request.session[STRATEGIST])
+
     strategist = parse_request(request)
+    # TODO: multiple strategist in a single session
     request.session[STRATEGIST] = StrategistSerializer(strategist, many=False).data
 
     return Response(request.session[STRATEGIST])
+
+
+@api_view(['GET'])
+def fetch_strategist_in_session(request):
+    if STRATEGIST in request.session:
+        return Response(request.session[STRATEGIST])
+
+    return Response("No strategist in your session")

@@ -1,6 +1,6 @@
 import datetime
-from .models import Strategist
-from .serializers import StrategistSerializer
+from .models import Strategist, Filter
+from .serializers import StrategistSerializer, FilterSerializer
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -12,11 +12,7 @@ from .apps import db_interface
 STRATEGIST = "strategist"
 
 
-@api_view(['GET'])
-def connect_check(request):
-    return Response("You're reaching connection check url.")
-
-
+# TODO: modified to POST method
 @api_view(['GET'])
 def create_strategist(request):
     def parse_request(reqeust_input) -> Strategist:
@@ -24,22 +20,28 @@ def create_strategist(request):
         from_date = reqeust_input.GET.get('from_date')
         to_date = reqeust_input.GET.get('to_date')
         name = reqeust_input.GET.get('name')
-        strategist = Strategist(asset_pool=asset_pool, from_date=from_date, to_date=to_date, name=name)
-        return strategist
-
-    if STRATEGIST in request.session.keys():
-        Response(request.session[STRATEGIST])
+        return Strategist(user=reqeust_input.user, asset_pool=asset_pool,
+                          from_date=from_date, to_date=to_date,
+                          name=name)
 
     strategist = parse_request(request)
-    # TODO: multiple strategist in a single session
-    request.session[STRATEGIST] = StrategistSerializer(strategist, many=False).data
-
-    return Response(request.session[STRATEGIST])
+    strategist.save()
+    return Response(StrategistSerializer(strategist).data)
 
 
 @api_view(['GET'])
-def fetch_strategist_in_session(request):
-    if STRATEGIST in request.session:
-        return Response(request.session[STRATEGIST])
+def get_strategist_list(request):
+    return Response(StrategistSerializer(Strategist.objects.filter(user=request.user), many=True).data)
 
-    return Response("No strategist in your session")
+
+# TODO: modified to POST method
+@api_view(['GET'])
+def create_filter(request):
+    def parse_request(reqeust_input) -> Filter:
+        applied_date = reqeust_input.GET.get('applied_date')
+        return Filter(user=reqeust_input.user, applied_date=applied_date)
+
+    strategy_filter = parse_request(request)
+    strategy_filter.save()
+    return Response(FilterSerializer(strategy_filter).data)
+

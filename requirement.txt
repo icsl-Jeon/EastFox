@@ -10,3 +10,6 @@ matplotlib
 django
 djangorestframework
 django-mysql
+tqdm
+django-cors-headers
+djangorestframework-simplejwt

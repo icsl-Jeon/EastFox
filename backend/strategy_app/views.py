@@ -2,8 +2,9 @@ import datetime
 from .models import Strategist, Filter
 from .serializers import StrategistSerializer, FilterSerializer
 
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 import sys
 
 sys.path.append('../')  # TODO: valid only when we start server at backend folder
@@ -30,6 +31,7 @@ def create_strategist(request):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_strategist_list(request):
     return Response(StrategistSerializer(Strategist.objects.filter(user=request.user), many=True).data)
 

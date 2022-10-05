@@ -14,8 +14,8 @@ class StrategyAppConfig(AppConfig):
     def ready(self):
         global db_interface
         print("Initializing strategy app...")
-        db_interface = DataBaseInterface()
-        exchange_list = ['NASDAQ', 'NYSE', 'AMEX']
-        available_symbols = db_interface.get_stock_on_exchange(exchange_list)
-        print(f"Prepared {len(available_symbols)} stocks.")
+        # db_interface = DataBaseInterface()
+        # exchange_list = ['NASDAQ', 'NYSE', 'AMEX']
+        # available_symbols = db_interface.get_stock_on_exchange(exchange_list)
+        # print(f"Prepared {len(available_symbols)} stocks.")
         print("Done !")

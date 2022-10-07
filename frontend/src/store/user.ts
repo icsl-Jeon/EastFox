@@ -3,17 +3,18 @@ import axios, { AxiosError } from "axios";
 
 export interface LoginStatus {
   status: "idle" | "pending" | "succeeded" | "failed";
-  userInfo: { name: string };
+  userInfo: { name: string; access_token: string };
   errorMessage: string;
 }
 
-interface LoginActionType {
+interface LoginActionPayload {
   email: string;
   name: string;
+  access: string;
 }
 
 export const fetchUserByLogin = createAsyncThunk<
-  LoginActionType,
+  LoginActionPayload,
   object,
   { rejectValue: string }
 >("fetchUserByLogin", async (loginInfo, thunkAPI) => {
@@ -31,7 +32,7 @@ export const fetchUserByLogin = createAsyncThunk<
 // TODO(@): consider localStorage
 const initialLogin: LoginStatus = {
   status: "idle",
-  userInfo: { name: "" },
+  userInfo: { name: "", access_token: "" },
   errorMessage: "",
 };
 const loginSlice = createSlice({
@@ -42,6 +43,7 @@ const loginSlice = createSlice({
     builder.addCase(fetchUserByLogin.fulfilled, (state, action) => {
       state.status = "succeeded";
       state.userInfo.name = action.payload.name;
+      state.userInfo.access_token = action.payload.access;
     });
     builder.addCase(fetchUserByLogin.pending, (state) => {
       state.status = "pending";

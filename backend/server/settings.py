@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'strategy_app',
     'user',
+    'fetch',
     'corsheaders',
     'rest_framework',
 ]

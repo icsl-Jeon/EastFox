@@ -20,4 +20,5 @@ urlpatterns = [
     path('api/strategist/', include('strategy_app.urls')),
     path('user/', include('user.urls')),
     path('admin/', admin.site.urls),
+    path('fetch/', include('fetch.urls'))
 ]

@@ -13,3 +13,4 @@ django-mysql
 tqdm
 django-cors-headers
 djangorestframework-simplejwt
+django4-background-tasks

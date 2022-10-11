@@ -8,7 +8,6 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 import sys
 
 sys.path.append('../')  # TODO: valid only when we start server at backend folder
-from .apps import db_interface
 
 STRATEGIST = "strategist"
 
@@ -46,4 +45,3 @@ def create_filter(request):
     strategy_filter = parse_request(request)
     strategy_filter.save()
     return Response(FilterSerializer(strategy_filter).data)
-

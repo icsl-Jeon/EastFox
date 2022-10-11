@@ -25,3 +25,15 @@ class SectorEnum(StringEnum):
     REAL_ESTATE = 'Real Estate'
     TECHNOLOGY = 'Technology'
     UTILITIES = 'Utilities'
+
+
+class AssetTypeEnum(StringEnum):
+    ETF = 'ETF'
+    FUND = 'FUND'
+    STOCK = 'STOCK'
+
+
+class ExchangeEnum(StringEnum):
+    NASDAQ = 'NASDAQ'
+    NYSE = 'NYSE'
+    AMEX = 'AMEX'

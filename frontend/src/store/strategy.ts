@@ -7,7 +7,11 @@ export interface Segment {
 }
 
 export interface Strategist {
+  from_date: Date;
+  to_date: Date;
+  name: String;
   segmentList: Array<Segment>;
+  id: number;
 }
 
 export interface Strategy {
@@ -19,7 +23,11 @@ const initialStrategy: Strategy = {
 };
 
 export const fetchStrategy = createAsyncThunk<
-  [],
+  Array<{
+    from_date: Date;
+    to_date: Date;
+    name: String;
+  }>,
   string,
   { rejectValue: string }
 >("fetchStrategy", async (accessToken, thunkAPI) => {
@@ -29,12 +37,10 @@ export const fetchStrategy = createAsyncThunk<
         Authorization: `Bearer ${accessToken}`,
       },
     };
-    console.log(accessToken);
     const { data } = await axios.get(
       "http://127.0.0.1:8000/api/strategist/get_strategist_list",
       config
     );
-    console.log(data);
     return data;
   } catch (e) {
     return thunkAPI.rejectWithValue("Fetch strategy failed");
@@ -47,7 +53,13 @@ const strategySlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(fetchStrategy.fulfilled, (state, action) => {
-      state.strategistList = action.payload;
+      state.strategistList = action.payload.map((item, index) => ({
+        from_date: item.from_date,
+        to_date: item.to_date,
+        name: item.name,
+        segmentList: [],
+        id: index,
+      }));
     });
     builder.addCase(fetchStrategy.rejected, (state, action) => {
       state.strategistList = [];

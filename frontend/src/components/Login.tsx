@@ -14,7 +14,6 @@ export default function Login() {
   const handleClick = (event: React.MouseEvent) => {
     event.preventDefault();
     const response = dispatch(fetchUserByLogin(loginInput));
-    console.log(response);
   };
 
   return <Button onClick={handleClick}>Login</Button>;

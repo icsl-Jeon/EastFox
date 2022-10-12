@@ -1,8 +1,15 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios, { AxiosError } from "axios";
 
+export enum Status {
+  Idle,
+  Pending,
+  Succeeded,
+  Failed,
+}
+
 export interface LoginStatus {
-  status: "idle" | "pending" | "succeeded" | "failed";
+  status: Status;
   userInfo: { name: string; access_token: string };
   errorMessage: string;
 }
@@ -31,7 +38,7 @@ export const fetchUserByLogin = createAsyncThunk<
 
 // TODO(@): consider localStorage
 const initialLogin: LoginStatus = {
-  status: "idle",
+  status: Status.Idle,
   userInfo: { name: "", access_token: "" },
   errorMessage: "",
 };
@@ -41,16 +48,16 @@ const loginSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(fetchUserByLogin.fulfilled, (state, action) => {
-      state.status = "succeeded";
+      state.status = Status.Succeeded;
       state.userInfo.name = action.payload.name;
       state.userInfo.access_token = action.payload.access;
     });
     builder.addCase(fetchUserByLogin.pending, (state) => {
-      state.status = "pending";
+      state.status = Status.Pending;
     });
     builder.addCase(fetchUserByLogin.rejected, (state, action) => {
       console.log(action.payload);
-      state.status = "failed";
+      state.status = Status.Failed;
       if (action.payload) {
         state.errorMessage = action.payload;
       } else {

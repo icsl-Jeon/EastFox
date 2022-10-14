@@ -8,28 +8,36 @@ import React, {
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, AppState } from "../store/store";
-import { fetchStrategy } from "../store/strategy";
-import CanvasElement, {
+import { addStrategist, fetchStrategy } from "../store/strategy";
+import User, { Status } from "../store/user";
+import { PARAMETERS } from "../types/constant";
+import {
+  ElementType,
   InteractionMode,
-  PARAMETERS,
+  Point,
   UserInteraction,
-} from "./CanvasElement";
-import { Status } from "../store/user";
+} from "../types/type";
 import ElementResizeListener from "./ElementResizeListener";
+import { renderInteraction } from "./Render";
+
+const initialInteraction: UserInteraction = {
+  selectionRectangle: { p1: { x: 0, y: 0 }, p2: { x: 0, y: 0 } },
+  whileClick: false,
+  mode: InteractionMode.Select,
+  createTarget: ElementType.Strategist,
+};
 
 export default function Canvas() {
-  const loginStatus = useSelector((state: AppState) => state.login);
+  const loginState = useSelector((state: AppState) => state.login);
+  const strategyState = useSelector((state: AppState) => state.strategy);
   const dispatch: AppDispatch = useDispatch();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [canvasElementList, setCanvasElementList] = useState<
-    Array<CanvasElement>
-  >([]);
   const [canvasDimension, setCanvasDimension] = useState<{
     width: number;
     height: number;
   }>({ width: 0, height: 0 });
-  const userInteractionRef = useRef<UserInteraction>(new UserInteraction());
-  const elementCreateIndexRef = useRef<number>(0);
+  const [interaction, setInteraction] =
+    useState<UserInteraction>(initialInteraction);
 
   const adaptResize = useCallback(() => {
     const canvas = canvasRef.current;
@@ -43,16 +51,16 @@ export default function Canvas() {
   }, []);
 
   useEffect(() => {
-    if (loginStatus.status === Status.Succeeded) {
-      dispatch(fetchStrategy(loginStatus.userInfo.access_token));
+    if (loginState.status === Status.Succeeded) {
+      dispatch(fetchStrategy(loginState.userInfo.access_token));
+      // TODO: generate canvas element from fetched serialized data
     }
-  }, [loginStatus]);
+  }, [loginState]);
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !canvas.parentElement || !canvas.getContext("2d")) return;
     const context = canvas.getContext("2d");
-
     context?.clearRect(0, 0, canvas.width, canvas.height);
 
     if (canvasDimension.height === 0) {
@@ -62,30 +70,58 @@ export default function Canvas() {
       canvas.width = canvasDimension.width;
       canvas.height = canvasDimension.height;
     }
-  }, [canvasElementList, canvasDimension, loginStatus]);
+    renderInteraction(context, interaction);
+  }, [canvasDimension, loginState, strategyState, interaction]);
+
+  const getCurrentMousePointOnCanvas = (
+    event: MouseEvent<HTMLCanvasElement>
+  ) => {
+    if (!canvasRef.current) return { x: -1, y: -1 };
+    const { clientX, clientY } = event;
+    const boundingRect = canvasRef.current.getBoundingClientRect();
+    const pointOnCanvas: Point = {
+      x: clientX - boundingRect.left,
+      y: clientY - boundingRect.top,
+    };
+    return pointOnCanvas;
+  };
 
   const handleMouseDown = (event: MouseEvent<HTMLCanvasElement>) => {
-    const { clientX, clientY } = event;
-    userInteractionRef.current.whileClick = true;
-    userInteractionRef.current.lastClickedPoint.x = clientX;
-    userInteractionRef.current.lastClickedPoint.y = clientY;
-    if (userInteractionRef.current.mode === InteractionMode.Create) {
-    }
+    const pointOnCanvas = getCurrentMousePointOnCanvas(event);
+    const newInteraction: UserInteraction = {
+      selectionRectangle: { p1: pointOnCanvas, p2: pointOnCanvas },
+      whileClick: true,
+      mode: InteractionMode.Create,
+      createTarget: ElementType.Strategist,
+    };
+    setInteraction(newInteraction);
   };
 
   const handleMouseMove = (event: MouseEvent<HTMLCanvasElement>) => {
-    const { clientX, clientY } = event;
-    if (!userInteractionRef.current.whileClick) return;
-    if (userInteractionRef.current.mode === InteractionMode.Create) {
+    if (!canvasRef.current) return;
+    const pointOnCanvas = getCurrentMousePointOnCanvas(event);
+
+    if (!interaction.whileClick) return;
+    if (interaction.mode === InteractionMode.Create) {
+      setInteraction({
+        ...interaction,
+        selectionRectangle: {
+          p1: interaction.selectionRectangle.p1,
+          p2: pointOnCanvas,
+        },
+      });
     }
   };
 
   const handleMouseUp = (event: MouseEvent<HTMLCanvasElement>) => {
     const { clientX, clientY } = event;
-    userInteractionRef.current.whileClick = false;
+    const newInteration: UserInteraction = interaction;
+    newInteration.whileClick = false;
+    if (newInteration.mode === InteractionMode.Create) {
+    }
   };
 
-  return loginStatus.status === Status.Succeeded ? (
+  return loginState.status === Status.Succeeded ? (
     <div>
       <ElementResizeListener onResize={adaptResize} />
       <canvas

@@ -18,7 +18,7 @@ class Strategist(models.Model):
     name = models.CharField(max_length=40)
     filter_list = models.ManyToManyField(Filter, blank=True)
 
-    x1 = models.FloatField(default=0.0)
-    y1 = models.FloatField(default=0.0)
-    x2 = models.FloatField(default=0.0)
-    y2 = models.FloatField(default=0.0)
+    x1 = models.FloatField(default=0.0, blank=False, null=False)
+    y1 = models.FloatField(default=0.0, blank=False, null=False)
+    x2 = models.FloatField(default=0.0, blank=False, null=False)
+    y2 = models.FloatField(default=0.0, blank=False, null=False)

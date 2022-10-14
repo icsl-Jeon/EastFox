@@ -12,15 +12,14 @@ sys.path.append('../')  # TODO: valid only when we start server at backend folde
 STRATEGIST = "strategist"
 
 
-# TODO: modified to POST method
-@api_view(['GET'])
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def create_strategist(request):
     def parse_request(reqeust_input) -> Strategist:
-        asset_pool = reqeust_input.GET.getlist("asset_pool", [])
-        from_date = reqeust_input.GET.get('from_date')
-        to_date = reqeust_input.GET.get('to_date')
-        name = reqeust_input.GET.get('name')
-        return Strategist(user=reqeust_input.user, asset_pool=asset_pool,
+        from_date = reqeust_input.POST.get('from_date')
+        to_date = reqeust_input.POST.get('to_date')
+        name = reqeust_input.POST.get('name')
+        return Strategist(user=reqeust_input.user,
                           from_date=from_date, to_date=to_date,
                           name=name)
 

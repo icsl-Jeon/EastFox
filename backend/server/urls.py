@@ -17,7 +17,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
-    path('api/strategist/', include('strategy_app.urls')),
+    path('api/strategy/', include('strategy_app.urls')),
     path('user/', include('user.urls')),
     path('admin/', admin.site.urls),
     path('fetch/', include('fetch.urls'))

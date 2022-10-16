@@ -16,9 +16,10 @@ import {
   InteractionMode,
   Point,
   UserInteraction,
+  Strategist,
 } from "../types/type";
 import ElementResizeListener from "./ElementResizeListener";
-import { renderInteraction } from "./Render";
+import { renderInteraction, renderStrategy } from "./Render";
 
 const initialInteraction: UserInteraction = {
   selectionRectangle: { p1: { x: 0, y: 0 }, p2: { x: 0, y: 0 } },
@@ -71,6 +72,7 @@ export default function Canvas() {
       canvas.height = canvasDimension.height;
     }
     renderInteraction(context, interaction);
+    renderStrategy(context, strategyState);
   }, [canvasDimension, loginState, strategyState, interaction]);
 
   const getCurrentMousePointOnCanvas = (
@@ -107,7 +109,12 @@ export default function Canvas() {
         ...interaction,
         selectionRectangle: {
           p1: interaction.selectionRectangle.p1,
-          p2: pointOnCanvas,
+          p2: {
+            x: pointOnCanvas.x,
+            y:
+              interaction.selectionRectangle.p1.y +
+              PARAMETERS.strategyRectangleWidth,
+          },
         },
       });
     }
@@ -115,9 +122,23 @@ export default function Canvas() {
 
   const handleMouseUp = (event: MouseEvent<HTMLCanvasElement>) => {
     const { clientX, clientY } = event;
-    const newInteration: UserInteraction = interaction;
-    newInteration.whileClick = false;
-    if (newInteration.mode === InteractionMode.Create) {
+    if (interaction.mode === InteractionMode.Create) {
+      setInteraction({ ...interaction, whileClick: false });
+      const strategist: Strategist = {
+        dateStart: new Date(1980, 1, 1),
+        dateEnd: new Date(2020, 12, 31),
+        name: `${new Date().toLocaleDateString()}`,
+        x1: interaction.selectionRectangle.p1.x,
+        y1: interaction.selectionRectangle.p1.y,
+        x2: interaction.selectionRectangle.p2.x,
+        y2: interaction.selectionRectangle.p2.y,
+      };
+      dispatch(
+        addStrategist({
+          accessToken: loginState.userInfo.access_token,
+          newStrategist: strategist,
+        })
+      );
     }
   };
 

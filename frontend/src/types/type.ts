@@ -7,8 +7,7 @@ export interface Strategist {
   dateStart: Date;
   dateEnd: Date;
   name: String;
-  segmentList: Array<Segment>;
-  id: number;
+  id?: number;
   x1: number;
   y1: number;
   x2: number;

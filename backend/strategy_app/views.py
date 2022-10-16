@@ -19,9 +19,15 @@ def create_strategist(request):
         from_date = reqeust_input.POST.get('from_date')
         to_date = reqeust_input.POST.get('to_date')
         name = reqeust_input.POST.get('name')
+        x1 = reqeust_input.POST.get('x1')
+        y1 = reqeust_input.POST.get('y1')
+        x2 = reqeust_input.POST.get('x2')
+        y2 = reqeust_input.POST.get('y2')
+
         return Strategist(user=reqeust_input.user,
                           from_date=from_date, to_date=to_date,
-                          name=name)
+                          name=name,
+                          x1=x1, y1=y1, x2=x2, y2=y2)
 
     strategist = parse_request(request)
     strategist.save()

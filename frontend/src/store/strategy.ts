@@ -51,13 +51,18 @@ export const addStrategist = createAsyncThunk<
     const config = {
       headers: {
         Authorization: `Bearer ${accessToken}`,
+        "Content-Type": `application/x-www-form-urlencoded`,
       },
     };
 
     const body = {
-      from_date: newStrategist.dateStart,
-      to_date: newStrategist.dateEnd,
+      from_date: newStrategist.dateStart.toISOString().slice(0, 10),
+      to_date: newStrategist.dateEnd.toISOString().slice(0, 10),
       name: newStrategist.name,
+      x1: newStrategist.x1,
+      y1: newStrategist.y1,
+      x2: newStrategist.x2,
+      y2: newStrategist.y2,
     };
 
     const { data } = await axios.post(
@@ -81,7 +86,6 @@ const strategySlice = createSlice({
       state.strategistList = action.payload.map((item) => ({
         dateStart: item.from_date,
         dateEnd: item.to_date,
-        segmentList: [],
         name: item.name,
         id: item.id,
         x1: item.x1,

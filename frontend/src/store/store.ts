@@ -1,10 +1,12 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
-import loginSlice from "./user";
+import loginSlice from "./login";
 import strategySlice from "./strategy";
+import interactionSlice from "./interaction";
 
 const rootReducer = combineReducers({
   login: loginSlice.reducer,
   strategy: strategySlice.reducer,
+  interaction: interactionSlice.reducer,
 });
 
 const store = configureStore({

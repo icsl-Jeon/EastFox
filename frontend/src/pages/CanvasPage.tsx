@@ -2,7 +2,7 @@ import Canvas from "../components/Canvas";
 import Login from "../components/Login";
 import { useSelector } from "react-redux";
 import { AppState } from "../store/store";
-import { Status } from "../store/user";
+import { Status } from "../store/login";
 
 export default function CanvasPage() {
   const loginStatus = useSelector((state: AppState) => state.login);

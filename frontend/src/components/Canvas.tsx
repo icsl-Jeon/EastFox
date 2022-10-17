@@ -9,14 +9,15 @@ import React, {
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, AppState } from "../store/store";
 import { addStrategist, fetchStrategy } from "../store/strategy";
-import User, { Status } from "../store/user";
+import interactionSlice from "../store/interaction";
+import { Status } from "../store/login";
 import { PARAMETERS } from "../types/constant";
 import {
   ElementType,
   InteractionMode,
   Point,
-  UserInteraction,
   Strategist,
+  UserInteraction,
 } from "../types/type";
 import ElementResizeListener from "./ElementResizeListener";
 import { renderInteraction, renderStrategy } from "./Render";
@@ -31,14 +32,13 @@ const initialInteraction: UserInteraction = {
 export default function Canvas() {
   const loginState = useSelector((state: AppState) => state.login);
   const strategyState = useSelector((state: AppState) => state.strategy);
+  const interactionState = useSelector((state: AppState) => state.interaction);
   const dispatch: AppDispatch = useDispatch();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasDimension, setCanvasDimension] = useState<{
     width: number;
     height: number;
   }>({ width: 0, height: 0 });
-  const [interaction, setInteraction] =
-    useState<UserInteraction>(initialInteraction);
 
   const adaptResize = useCallback(() => {
     const canvas = canvasRef.current;
@@ -54,7 +54,9 @@ export default function Canvas() {
   useEffect(() => {
     if (loginState.status === Status.Succeeded) {
       dispatch(fetchStrategy(loginState.userInfo.access_token));
-      // TODO: generate canvas element from fetched serialized data
+      dispatch(
+        interactionSlice.actions.setInteractionMode(InteractionMode.Create)
+      );
     }
   }, [loginState]);
 
@@ -71,9 +73,9 @@ export default function Canvas() {
       canvas.width = canvasDimension.width;
       canvas.height = canvasDimension.height;
     }
-    renderInteraction(context, interaction);
+    renderInteraction(context, interactionState);
     renderStrategy(context, strategyState);
-  }, [canvasDimension, loginState, strategyState, interaction]);
+  }, [canvasDimension, loginState, strategyState, interactionState]);
 
   const getCurrentMousePointOnCanvas = (
     event: MouseEvent<HTMLCanvasElement>
@@ -90,49 +92,27 @@ export default function Canvas() {
 
   const handleMouseDown = (event: MouseEvent<HTMLCanvasElement>) => {
     const pointOnCanvas = getCurrentMousePointOnCanvas(event);
-    const newInteraction: UserInteraction = {
-      selectionRectangle: { p1: pointOnCanvas, p2: pointOnCanvas },
-      whileClick: true,
-      mode: InteractionMode.Create,
-      createTarget: ElementType.Strategist,
-    };
-    setInteraction(newInteraction);
+    dispatch(interactionSlice.actions.handleMouseDown(pointOnCanvas));
   };
 
   const handleMouseMove = (event: MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current) return;
     const pointOnCanvas = getCurrentMousePointOnCanvas(event);
-
-    if (!interaction.whileClick) return;
-    if (interaction.mode === InteractionMode.Create) {
-      setInteraction({
-        ...interaction,
-        selectionRectangle: {
-          p1: interaction.selectionRectangle.p1,
-          p2: {
-            x: pointOnCanvas.x,
-            y:
-              interaction.selectionRectangle.p1.y +
-              PARAMETERS.strategyRectangleWidth,
-          },
-        },
-      });
-    }
+    dispatch(interactionSlice.actions.handleMouseMove(pointOnCanvas));
   };
 
   const handleMouseUp = (event: MouseEvent<HTMLCanvasElement>) => {
-    const { clientX, clientY } = event;
-    if (interaction.mode === InteractionMode.Create) {
-      setInteraction({ ...interaction, whileClick: false });
+    dispatch(interactionSlice.actions.handleMouseUp());
+    if (interactionState.mode === InteractionMode.Create) {
       const strategist: Strategist = {
         dateStart: new Date(1980, 1, 1),
         dateEnd: new Date(2020, 12, 31),
         name: `${new Date().toLocaleDateString()}`,
-        x1: interaction.selectionRectangle.p1.x,
-        y1: interaction.selectionRectangle.p1.y,
-        x2: interaction.selectionRectangle.p2.x,
-        y2: interaction.selectionRectangle.p2.y,
+        x1: interactionState.selectionRectangle.p1.x,
+        y1: interactionState.selectionRectangle.p1.y,
+        x2: interactionState.selectionRectangle.p2.x,
+        y2: interactionState.selectionRectangle.p2.y,
       };
+      console.log(strategist);
       dispatch(
         addStrategist({
           accessToken: loginState.userInfo.access_token,

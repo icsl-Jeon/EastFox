@@ -4,7 +4,7 @@ import { AppState } from "../store/store";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../store/store";
 import Button from "react-bootstrap/Button";
-import loginSlice, { fetchUserByLogin } from "../store/user";
+import loginSlice, { fetchUserByLogin } from "../store/login";
 
 const loginInput = { username: "jbs", password: "jbs4235v" };
 

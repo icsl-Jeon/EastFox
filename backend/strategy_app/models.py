@@ -40,5 +40,8 @@ class FilterApplication(models.Model):
 
 
 class Segment(models.Model):
+    id = models.AutoField(primary_key=True, editable=False)
     strategist = models.ForeignKey(Strategist, models.CASCADE, null=True)
     asset_list = models.ManyToManyField(Asset, blank=True)
+    from_date = models.DateField()
+    to_date = models.DateField()

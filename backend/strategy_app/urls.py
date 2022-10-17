@@ -6,5 +6,6 @@ urlpatterns = [
     path('create_strategist', views.create_strategist),
     path('get_strategist_list', views.get_strategist_list),
     path('create_filter', views.create_filter),
-    path('apply_filter_to_strategist', views.apply_filter_to_strategist)
+    path('register_filter_to_strategist', views.register_filter_to_strategist),
+    path('calculate_segment_list', views.calculate_segment_list)
 ]

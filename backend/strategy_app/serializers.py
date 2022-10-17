@@ -5,7 +5,7 @@ from .models import Strategist, Filter, Segment
 class SegmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Segment
-        fields = ['asset_list']
+        fields = '__all__'
         exclude = []
 
 

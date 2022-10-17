@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'background_task',
+    'sortedm2m'
 ]
 
 MIDDLEWARE = [

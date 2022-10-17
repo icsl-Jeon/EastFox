@@ -77,6 +77,21 @@ export const addStrategist = createAsyncThunk<
   }
 });
 
+export const applyFilterToStrategist = createAsyncThunk<
+  boolean,
+  {
+    filterId: number;
+    strategistId: number;
+  },
+  { rejectValue: string }
+>("applyFilterToStrategist", async ({ filterId, strategistId }, thunkAPI) => {
+  try {
+    return true;
+  } catch (e) {
+    return thunkAPI.rejectWithValue("Apply filter failed");
+  }
+});
+
 const strategySlice = createSlice({
   name: "strategy",
   initialState: initialStrategy,

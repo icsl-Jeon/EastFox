@@ -1,6 +1,8 @@
 import datetime
-from .models import Strategist, Filter
-from .serializers import StrategistSerializer, FilterSerializer
+from .models import Strategist, Filter, Segment, FilterApplication
+from fetch.models import Asset
+
+from .serializers import StrategistSerializer, FilterSerializer, SegmentSerializer
 
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
@@ -40,13 +42,56 @@ def get_strategist_list(request):
     return Response(StrategistSerializer(Strategist.objects.filter(user=request.user), many=True).data)
 
 
-# TODO: modified to POST method
-@api_view(['GET'])
+@api_view(['POST'])
 def create_filter(request):
     def parse_request(reqeust_input) -> Filter:
-        applied_date = reqeust_input.GET.get('applied_date')
+        applied_date = reqeust_input.POST.get('applied_date')
         return Filter(user=reqeust_input.user, applied_date=applied_date)
 
     strategy_filter = parse_request(request)
     strategy_filter.save()
     return Response(FilterSerializer(strategy_filter).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def register_filter_to_strategist(request):
+    try:
+        applied_filter = Filter.objects.get(id=request.GET.get('filter_id'))
+        strategist = Strategist.objects.get(id=request.GET.get('strategist_id'))
+
+        if applied_filter.applied_date >= strategist.to_date or applied_filter.applied_date <= strategist.from_date:
+            raise Exception('Filter applied date not included in strategist horizon.')
+
+        application = FilterApplication(strategist=strategist, filter=applied_filter,
+                                        applied_date=applied_filter.applied_date)
+        application.save()
+        return Response(True)
+
+    except Exception as e:
+        return Response(False)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def calculate_segment_list(request):
+    try:
+        strategist = Strategist.objects.get(id=request.GET.get('strategist_id'))
+        Segment.objects.filter(strategist=strategist).delete()
+
+        segment = Segment.objects.create(strategist=strategist, from_date=strategist.from_date,
+                                         to_date=strategist.to_date)
+        segment.asset_list.add(*Asset.objects.all())
+
+        ordered_filter_application = FilterApplication.objects.filter(strategist=strategist).order_by('applied_date')
+        for application in ordered_filter_application:
+            if application.applied_date >= strategist.to_date or application.applied_date <= strategist.from_date:
+                continue
+            segment.to_date = application.applied_date
+            segment.save()
+            segment = Segment.objects.create(strategist=strategist, from_date=application.applied_date,
+                                             to_date=strategist.to_date)
+        segment_list_serialized = SegmentSerializer(Segment.objects.filter(strategist=strategist), many=True).data
+        return Response(segment_list_serialized)
+    except Exception as e:
+        return Response({})

@@ -46,7 +46,7 @@ export const addStrategist = createAsyncThunk<
     newStrategist: Strategist;
   },
   { rejectValue: string }
->("addStrategist", async ({ newStrategist, accessToken }, thunkAPI) => {
+>("addStrategist", async ({ accessToken, newStrategist }, thunkAPI) => {
   try {
     const config = {
       headers: {
@@ -74,21 +74,6 @@ export const addStrategist = createAsyncThunk<
     return { success: true, updatedStrategist: data };
   } catch (e) {
     return thunkAPI.rejectWithValue("Add strategist failed");
-  }
-});
-
-export const applyFilterToStrategist = createAsyncThunk<
-  boolean,
-  {
-    filterId: number;
-    strategistId: number;
-  },
-  { rejectValue: string }
->("applyFilterToStrategist", async ({ filterId, strategistId }, thunkAPI) => {
-  try {
-    return true;
-  } catch (e) {
-    return thunkAPI.rejectWithValue("Apply filter failed");
   }
 });
 

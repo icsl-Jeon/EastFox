@@ -14,6 +14,18 @@ sys.path.append('../')  # TODO: valid only when we start server at backend folde
 STRATEGIST = "strategist"
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_strategist_list(request):
+    return Response(StrategistSerializer(Strategist.objects.filter(user=request.user), many=True).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_filter_list(request):
+    return Response(FilterSerializer(Filter.objects.filter(user=request.user), many=True).data)
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_strategist(request):
@@ -36,17 +48,14 @@ def create_strategist(request):
     return Response(StrategistSerializer(strategist).data)
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_strategist_list(request):
-    return Response(StrategistSerializer(Strategist.objects.filter(user=request.user), many=True).data)
-
-
 @api_view(['POST'])
 def create_filter(request):
     def parse_request(reqeust_input) -> Filter:
-        applied_date = reqeust_input.POST.get('applied_date')
-        return Filter(user=reqeust_input.user, applied_date=applied_date)
+        x1 = reqeust_input.POST.get('x1')
+        y1 = reqeust_input.POST.get('y1')
+        x2 = reqeust_input.POST.get('x2')
+        y2 = reqeust_input.POST.get('y2')
+        return Filter(user=reqeust_input.user, x1=x1, y1=y1, x2=x2, y2=y2)
 
     strategy_filter = parse_request(request)
     strategy_filter.save()

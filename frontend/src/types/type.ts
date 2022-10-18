@@ -4,9 +4,17 @@ export interface Segment {
 }
 
 export interface Strategist {
+  id?: number;
   dateStart: Date;
   dateEnd: Date;
   name: String;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+export interface Filter {
   id?: number;
   x1: number;
   y1: number;

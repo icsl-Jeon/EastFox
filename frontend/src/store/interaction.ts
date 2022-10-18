@@ -31,10 +31,19 @@ const interactionSlice = createSlice({
     handleMouseMove: (state, action: PayloadAction<Point>) => {
       if (!state.whileClick) return;
       if (state.mode === InteractionMode.Create) {
-        state.selectionRectangle.p2 = {
-          x: action.payload.x,
-          y: state.selectionRectangle.p1.y + PARAMETERS.strategyRectangleWidth,
-        };
+        if (state.createTarget === ElementType.Strategist) {
+          state.selectionRectangle.p2 = {
+            x: action.payload.x,
+            y:
+              state.selectionRectangle.p1.y + PARAMETERS.strategyRectangleWidth,
+          };
+        }
+        if (state.createTarget === ElementType.Filter) {
+          state.selectionRectangle.p2 = {
+            x: action.payload.x,
+            y: action.payload.y,
+          };
+        }
       }
     },
     handleMouseUp: (state) => {

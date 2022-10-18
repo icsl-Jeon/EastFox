@@ -1,5 +1,4 @@
-import { UserInteraction } from "../types/type";
-import { Strategy } from "../types/type";
+import { Strategy, Filter, UserInteraction } from "../types/type";
 
 export const renderInteraction = (
   context: CanvasRenderingContext2D | null,
@@ -28,6 +27,21 @@ export const renderStrategy = (
       strategist.y1,
       strategist.x2 - strategist.x1,
       strategist.y2 - strategist.y1
+    )
+  );
+};
+
+export const renderFilterList = (
+  context: CanvasRenderingContext2D | null,
+  filter_list: Array<Filter>
+) => {
+  if (!context) return;
+  filter_list.forEach((filter) =>
+    context.fillRect(
+      filter.x1,
+      filter.y1,
+      filter.x2 - filter.x1,
+      filter.y2 - filter.y1
     )
   );
 };

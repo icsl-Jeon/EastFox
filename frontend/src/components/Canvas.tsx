@@ -14,24 +14,19 @@ import { Status } from "../store/login";
 import { PARAMETERS } from "../types/constant";
 import {
   ElementType,
+  Filter,
   InteractionMode,
   Point,
   Strategist,
-  UserInteraction,
 } from "../types/type";
 import ElementResizeListener from "./ElementResizeListener";
-import { renderInteraction, renderStrategy } from "./Render";
-
-const initialInteraction: UserInteraction = {
-  selectionRectangle: { p1: { x: 0, y: 0 }, p2: { x: 0, y: 0 } },
-  whileClick: false,
-  mode: InteractionMode.Select,
-  createTarget: ElementType.Strategist,
-};
+import { renderInteraction, renderStrategy, renderFilterList } from "./Render";
+import { addFilter, fetchFilter } from "../store/filter";
 
 export default function Canvas() {
   const loginState = useSelector((state: AppState) => state.login);
   const strategyState = useSelector((state: AppState) => state.strategy);
+  const filterState = useSelector((state: AppState) => state.filter);
   const interactionState = useSelector((state: AppState) => state.interaction);
   const dispatch: AppDispatch = useDispatch();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -54,6 +49,7 @@ export default function Canvas() {
   useEffect(() => {
     if (loginState.status === Status.Succeeded) {
       dispatch(fetchStrategy(loginState.userInfo.access_token));
+      dispatch(fetchFilter(loginState.userInfo.access_token));
       dispatch(
         interactionSlice.actions.setInteractionMode(InteractionMode.Create)
       );
@@ -75,7 +71,14 @@ export default function Canvas() {
     }
     renderInteraction(context, interactionState);
     renderStrategy(context, strategyState);
-  }, [canvasDimension, loginState, strategyState, interactionState]);
+    renderFilterList(context, filterState.filter_list);
+  }, [
+    canvasDimension,
+    loginState,
+    strategyState,
+    filterState,
+    interactionState,
+  ]);
 
   const getCurrentMousePointOnCanvas = (
     event: MouseEvent<HTMLCanvasElement>
@@ -103,22 +106,37 @@ export default function Canvas() {
   const handleMouseUp = (event: MouseEvent<HTMLCanvasElement>) => {
     dispatch(interactionSlice.actions.handleMouseUp());
     if (interactionState.mode === InteractionMode.Create) {
-      const strategist: Strategist = {
-        dateStart: new Date(1980, 1, 1),
-        dateEnd: new Date(2020, 12, 31),
-        name: `${new Date().toLocaleDateString()}`,
-        x1: interactionState.selectionRectangle.p1.x,
-        y1: interactionState.selectionRectangle.p1.y,
-        x2: interactionState.selectionRectangle.p2.x,
-        y2: interactionState.selectionRectangle.p2.y,
-      };
-      console.log(strategist);
-      dispatch(
-        addStrategist({
-          accessToken: loginState.userInfo.access_token,
-          newStrategist: strategist,
-        })
-      );
+      if (interactionState.createTarget === ElementType.Strategist) {
+        const strategist: Strategist = {
+          dateStart: new Date(1980, 1, 1),
+          dateEnd: new Date(2020, 12, 31),
+          name: `${new Date().toLocaleDateString()}`,
+          x1: interactionState.selectionRectangle.p1.x,
+          y1: interactionState.selectionRectangle.p1.y,
+          x2: interactionState.selectionRectangle.p2.x,
+          y2: interactionState.selectionRectangle.p2.y,
+        };
+        dispatch(
+          addStrategist({
+            accessToken: loginState.userInfo.access_token,
+            newStrategist: strategist,
+          })
+        );
+      }
+      if (interactionState.createTarget === ElementType.Filter) {
+        const filter: Filter = {
+          x1: interactionState.selectionRectangle.p1.x,
+          y1: interactionState.selectionRectangle.p1.y,
+          x2: interactionState.selectionRectangle.p2.x,
+          y2: interactionState.selectionRectangle.p2.y,
+        };
+        dispatch(
+          addFilter({
+            accessToken: loginState.userInfo.access_token,
+            newFilter: filter,
+          })
+        );
+      }
     }
   };
 

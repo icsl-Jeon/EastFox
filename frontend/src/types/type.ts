@@ -27,8 +27,8 @@ export interface Strategy {
 }
 
 export enum ElementType {
-  Strategist,
-  Filter,
+  Strategist = "Strategist",
+  Filter = "Filter",
 }
 
 export interface Point {

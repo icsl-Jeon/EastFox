@@ -3,4 +3,6 @@ export const PARAMETERS = {
   canvasHeight: 500,
   strategyRectangleWidth: 3,
   strategyRectangleMinimumLength: 30,
+  focusEdgeThickness: 4,
+  focusCornerThickness: 2,
 };

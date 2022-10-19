@@ -71,7 +71,7 @@ export default function Canvas() {
     }
     renderInteraction(context, interactionState);
     renderStrategy(context, strategyState);
-    renderFilterList(context, filterState.filter_list);
+    renderFilterList(context, filterState.filterList);
   }, [
     canvasDimension,
     loginState,
@@ -100,7 +100,15 @@ export default function Canvas() {
 
   const handleMouseMove = (event: MouseEvent<HTMLCanvasElement>) => {
     const pointOnCanvas = getCurrentMousePointOnCanvas(event);
-    dispatch(interactionSlice.actions.handleMouseMove(pointOnCanvas));
+    dispatch(
+      interactionSlice.actions.handleMouseMove({
+        mousePosition: pointOnCanvas,
+        elementList: [
+          ...strategyState.strategistList,
+          ...filterState.filterList,
+        ],
+      })
+    );
   };
 
   const handleMouseUp = (event: MouseEvent<HTMLCanvasElement>) => {

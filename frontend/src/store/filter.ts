@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { Filter } from "../types/type";
 
-const initialFilter = { filter_list: Array<Filter>() };
+const initialFilter = { filterList: Array<Filter>() };
 
 export const fetchFilter = createAsyncThunk<
   Array<{
@@ -75,7 +75,7 @@ const filterSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(fetchFilter.fulfilled, (state, action) => {
-      state.filter_list = action.payload.map((item) => ({
+      state.filterList = action.payload.map((item) => ({
         id: item.id,
         x1: item.x1,
         x2: item.x2,
@@ -84,10 +84,10 @@ const filterSlice = createSlice({
       }));
     });
     builder.addCase(fetchFilter.rejected, (state, action) => {
-      state.filter_list = [];
+      state.filterList = [];
     });
     builder.addCase(addFilter.fulfilled, (state, action) => {
-      state.filter_list.push(action.payload.updatedFilter);
+      state.filterList.push(action.payload.updatedFilter);
     });
     builder.addCase(addFilter.rejected, (state, action) => {});
   },

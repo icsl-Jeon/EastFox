@@ -16,7 +16,6 @@ const initialInteraction: UserInteraction = {
   whileClick: false,
   mode: InteractionMode.Idle,
   createTarget: ElementType.Strategist,
-  focusTargetIndex: -1,
 };
 
 const checkInsideRectangle = (point: Point, rectangle: Rectangle) => {
@@ -114,6 +113,7 @@ const interactionSlice = createSlice({
       }>
     ) => {
       if (!state.whileClick) {
+        state.mode = InteractionMode.Create;
         for (const element of action.payload.elementList) {
           const boundingRectangle = {
             p1: {
@@ -133,20 +133,21 @@ const interactionSlice = createSlice({
             case RectangleFocusRegion.Outer:
               continue;
 
+            case RectangleFocusRegion.Corner:
+              state.mode = InteractionMode.Reshape;
+              break;
+
             case RectangleFocusRegion.Inner:
-              console.log(element.id, RectangleFocusRegion.Inner);
+              state.mode = InteractionMode.Translate;
               break;
 
             case RectangleFocusRegion.Edge:
-              console.log(element.id, RectangleFocusRegion.Edge);
-              break;
-
-            case RectangleFocusRegion.Corner:
-              console.log(element.id, RectangleFocusRegion.Corner);
+              if ("name" in element) state.mode = InteractionMode.Translate;
+              else state.mode = InteractionMode.Connect;
               break;
           }
+          state.focusTarget = element;
         }
-        state.focusTargetIndex = -1;
       }
 
       if (state.whileClick)

@@ -42,11 +42,11 @@ export interface Rectangle {
 }
 
 export enum InteractionMode {
-  Idle,
-  Create,
-  Translate,
-  Reshape,
-  Connect,
+  Idle = "Idle",
+  Create = "Create",
+  Translate = "Translate",
+  Reshape = "Reshape",
+  Connect = "Connect",
 }
 
 export enum RectangleFocusRegion {
@@ -61,5 +61,5 @@ export interface UserInteraction {
   whileClick: boolean;
   mode: InteractionMode;
   createTarget: ElementType;
-  focusTargetIndex: number;
+  focusTarget?: Strategist | Filter;
 }

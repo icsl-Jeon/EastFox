@@ -12,10 +12,11 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { PARAMETERS } from "../types/constant";
 
 const initialInteraction: UserInteraction = {
-  selectionRectangle: { p1: { x: 0, y: 0 }, p2: { x: 0, y: 0 } },
+  clickedSelectionRectangle: { p1: { x: 0, y: 0 }, p2: { x: 0, y: 0 } },
   whileClick: false,
   mode: InteractionMode.Idle,
   createTarget: ElementType.Strategist,
+  currentMousePosition: { x: 0, y: 0 },
 };
 
 const checkInsideRectangle = (point: Point, rectangle: Rectangle) => {
@@ -103,7 +104,11 @@ const interactionSlice = createSlice({
     },
     handleMouseDown: (state, action: PayloadAction<Point>) => {
       state.whileClick = true;
-      state.selectionRectangle = { p1: action.payload, p2: action.payload };
+      state.clickedSelectionRectangle = {
+        p1: action.payload,
+        p2: action.payload,
+      };
+      state.currentMousePosition = action.payload;
     },
     handleMouseMove: (
       state,
@@ -112,6 +117,7 @@ const interactionSlice = createSlice({
         elementList: Array<Strategist | Filter>;
       }>
     ) => {
+      state.currentMousePosition = action.payload.mousePosition;
       if (!state.whileClick) {
         state.mode = InteractionMode.Create;
         for (const element of action.payload.elementList) {
@@ -154,16 +160,16 @@ const interactionSlice = createSlice({
         if (state.mode === InteractionMode.Create) {
           switch (state.createTarget) {
             case ElementType.Strategist:
-              state.selectionRectangle.p2 = {
+              state.clickedSelectionRectangle.p2 = {
                 x: action.payload.mousePosition.x,
                 y:
-                  state.selectionRectangle.p1.y +
+                  state.clickedSelectionRectangle.p1.y +
                   PARAMETERS.strategyRectangleWidth,
               };
               break;
 
             case ElementType.Filter:
-              state.selectionRectangle.p2 = {
+              state.clickedSelectionRectangle.p2 = {
                 x: action.payload.mousePosition.x,
                 y: action.payload.mousePosition.y,
               };

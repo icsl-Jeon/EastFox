@@ -119,10 +119,10 @@ export default function Canvas() {
           dateStart: new Date(1980, 1, 1),
           dateEnd: new Date(2020, 12, 31),
           name: `${new Date().toLocaleDateString()}`,
-          x1: interactionState.selectionRectangle.p1.x,
-          y1: interactionState.selectionRectangle.p1.y,
-          x2: interactionState.selectionRectangle.p2.x,
-          y2: interactionState.selectionRectangle.p2.y,
+          x1: interactionState.clickedSelectionRectangle.p1.x,
+          y1: interactionState.clickedSelectionRectangle.p1.y,
+          x2: interactionState.clickedSelectionRectangle.p2.x,
+          y2: interactionState.clickedSelectionRectangle.p2.y,
         };
         dispatch(
           addStrategist({
@@ -133,10 +133,10 @@ export default function Canvas() {
       }
       if (interactionState.createTarget === ElementType.Filter) {
         const filter: Filter = {
-          x1: interactionState.selectionRectangle.p1.x,
-          y1: interactionState.selectionRectangle.p1.y,
-          x2: interactionState.selectionRectangle.p2.x,
-          y2: interactionState.selectionRectangle.p2.y,
+          x1: interactionState.clickedSelectionRectangle.p1.x,
+          y1: interactionState.clickedSelectionRectangle.p1.y,
+          x2: interactionState.clickedSelectionRectangle.p2.x,
+          y2: interactionState.clickedSelectionRectangle.p2.y,
         };
         dispatch(
           addFilter({

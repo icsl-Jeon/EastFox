@@ -1,9 +1,16 @@
+export enum ElementType {
+  Strategist = "Strategist",
+  Filter = "Filter",
+}
+
+
 export interface Segment {
   dateStart: Date;
   dateEnd: Date;
 }
 
 export interface Strategist {
+  type: ElementType.Strategist
   id?: number;
   dateStart: Date;
   dateEnd: Date;
@@ -15,6 +22,7 @@ export interface Strategist {
 }
 
 export interface Filter {
+  type: ElementType.Filter
   id?: number;
   x1: number;
   y1: number;
@@ -24,11 +32,6 @@ export interface Filter {
 
 export interface Strategy {
   strategistList: Array<Strategist>;
-}
-
-export enum ElementType {
-  Strategist = "Strategist",
-  Filter = "Filter",
 }
 
 export interface Point {

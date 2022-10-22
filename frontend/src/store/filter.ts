@@ -1,27 +1,25 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import {createAsyncThunk, createSlice} from "@reduxjs/toolkit";
 import axios from "axios";
-import { Filter } from "../types/type";
+import {ElementType, Filter} from "../types/type";
 
-const initialFilter = { filterList: Array<Filter>() };
+const initialFilter = {filterList: Array<Filter>()};
 
-export const fetchFilter = createAsyncThunk<
-  Array<{
-    id: number;
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
-  }>,
+export const fetchFilter = createAsyncThunk<Array<{
+  id: number;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}>,
   string,
-  { rejectValue: string }
->("fetchFilter", async (accessToken, thunkAPI) => {
+  { rejectValue: string }>("fetchFilter", async (accessToken, thunkAPI) => {
   try {
     const config = {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
     };
-    const { data } = await axios.get(
+    const {data} = await axios.get(
       "http://127.0.0.1:8000/api/strategy/get_filter_list",
       config
     );
@@ -31,17 +29,15 @@ export const fetchFilter = createAsyncThunk<
   }
 });
 
-export const addFilter = createAsyncThunk<
-  {
-    success: boolean;
-    updatedFilter: Filter;
-  },
+export const addFilter = createAsyncThunk<{
+  success: boolean;
+  updatedFilter: Filter;
+},
   {
     accessToken: string;
     newFilter: Filter;
   },
-  { rejectValue: string }
->("addFilter", async ({ newFilter, accessToken }, thunkAPI) => {
+  { rejectValue: string }>("addFilter", async ({newFilter, accessToken}, thunkAPI) => {
   try {
     const config = {
       headers: {
@@ -57,13 +53,13 @@ export const addFilter = createAsyncThunk<
       y2: newFilter.y2,
     };
 
-    const { data } = await axios.post(
+    const {data} = await axios.post(
       "http://127.0.0.1:8000/api/strategy/create_filter",
       body,
       config
     );
 
-    return { success: true, updatedFilter: data };
+    return {success: true, updatedFilter: data};
   } catch (e) {
     return thunkAPI.rejectWithValue("Add Filter failed");
   }
@@ -76,6 +72,7 @@ const filterSlice = createSlice({
   extraReducers: (builder) => {
     builder.addCase(fetchFilter.fulfilled, (state, action) => {
       state.filterList = action.payload.map((item) => ({
+        type: ElementType.Filter,
         id: item.id,
         x1: item.x1,
         x2: item.x2,
@@ -89,7 +86,8 @@ const filterSlice = createSlice({
     builder.addCase(addFilter.fulfilled, (state, action) => {
       state.filterList.push(action.payload.updatedFilter);
     });
-    builder.addCase(addFilter.rejected, (state, action) => {});
+    builder.addCase(addFilter.rejected, (state, action) => {
+    });
   },
 });
 

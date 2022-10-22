@@ -35,16 +35,21 @@ export const renderInteraction = (
           p2.y - p1.y + 2 * margin
         );
         break;
+
+      case InteractionMode.Connect:
+        if (!interaction.focusTarget) return;
     }
   }
 
   if (interaction.whileClick) {
     context.globalAlpha = 0.2;
     context.fillRect(
-      interaction.selectionRectangle.p1.x,
-      interaction.selectionRectangle.p1.y,
-      interaction.selectionRectangle.p2.x - interaction.selectionRectangle.p1.x,
-      interaction.selectionRectangle.p2.y - interaction.selectionRectangle.p1.y
+      interaction.clickedSelectionRectangle.p1.x,
+      interaction.clickedSelectionRectangle.p1.y,
+      interaction.clickedSelectionRectangle.p2.x -
+        interaction.clickedSelectionRectangle.p1.x,
+      interaction.clickedSelectionRectangle.p2.y -
+        interaction.clickedSelectionRectangle.p1.y
     );
     context.globalAlpha = 1;
   }

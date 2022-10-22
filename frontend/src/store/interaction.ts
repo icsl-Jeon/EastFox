@@ -8,15 +8,15 @@ import {
   Strategist,
   UserInteraction,
 } from "../types/type";
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { PARAMETERS } from "../types/constant";
+import {createSlice, PayloadAction} from "@reduxjs/toolkit";
+import {PARAMETERS} from "../types/constant";
 
 const initialInteraction: UserInteraction = {
-  clickedSelectionRectangle: { p1: { x: 0, y: 0 }, p2: { x: 0, y: 0 } },
+  clickedSelectionRectangle: {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}},
   whileClick: false,
   mode: InteractionMode.Idle,
   createTarget: ElementType.Strategist,
-  currentMousePosition: { x: 0, y: 0 },
+  currentMousePosition: {x: 0, y: 0},
 };
 
 const checkInsideRectangle = (point: Point, rectangle: Rectangle) => {
@@ -157,7 +157,7 @@ const interactionSlice = createSlice({
       }
 
       if (state.whileClick)
-        if (state.mode === InteractionMode.Create) {
+        if (state.mode === InteractionMode.Create)
           switch (state.createTarget) {
             case ElementType.Strategist:
               state.clickedSelectionRectangle.p2 = {
@@ -173,6 +173,11 @@ const interactionSlice = createSlice({
                 x: action.payload.mousePosition.x,
                 y: action.payload.mousePosition.y,
               };
+          }
+        else if (state.mode === InteractionMode.Connect) {
+          state.clickedSelectionRectangle.p2 = {
+            x: action.payload.mousePosition.x,
+            y: action.payload.mousePosition.y
           }
         }
     },

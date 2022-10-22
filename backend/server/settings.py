@@ -41,9 +41,7 @@ INSTALLED_APPS = [
     'fetch',
     'corsheaders',
     'rest_framework',
-    'background_task',
-    'sortedm2m'
-]
+    'background_task', ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

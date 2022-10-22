@@ -5,6 +5,7 @@ export const PARAMETERS = {
   strategyRectangleMinimumLength: 30,
   focusEdgeThickness: 4,
   focusCornerThickness: 2,
-  renderHoverModeTranslateMargin: 3,
-  renderHoverModeTranslateThickness: 3,
+  focusHighlightRectangleMargin: 3,
+  focusHighlightRectangleThickness: 3,
+  minimumAreaForFilter: 200
 };

@@ -8,15 +8,16 @@ import {
   Strategist,
   UserInteraction,
 } from "../types/type";
-import {createSlice, PayloadAction} from "@reduxjs/toolkit";
-import {PARAMETERS} from "../types/constant";
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { PARAMETERS } from "../types/constant";
 
 const initialInteraction: UserInteraction = {
-  clickedSelectionRectangle: {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}},
+  clickedSelectionRectangle: { p1: { x: 0, y: 0 }, p2: { x: 0, y: 0 } },
   whileClick: false,
   mode: InteractionMode.Idle,
   createTarget: ElementType.Strategist,
-  currentMousePosition: {x: 0, y: 0},
+  currentMousePosition: { x: 0, y: 0 },
+  focusTargetList: [],
 };
 
 const checkInsideRectangle = (point: Point, rectangle: Rectangle) => {
@@ -28,6 +29,12 @@ const checkInsideRectangle = (point: Point, rectangle: Rectangle) => {
   )
     return true;
   return false;
+};
+
+const computeDistanceBetweenPoints = (point1: Point, point2: Point) => {
+  return Math.sqrt(
+    Math.pow(point1.x - point2.x, 2) + Math.pow(point1.y - point2.y, 2)
+  );
 };
 
 const computeFocusRegion = (mousePosition: Point, rectangle: Rectangle) => {
@@ -46,7 +53,7 @@ const computeFocusRegion = (mousePosition: Point, rectangle: Rectangle) => {
   const width = rectangle.p2.x - rectangle.p1.x;
   const height = rectangle.p2.y - rectangle.p1.y;
 
-  const pointWithRespectToCenter: Point = {
+  const mousePositionWithRespectToCenter: Point = {
     x: Math.abs(mousePosition.x - rectangleCenter.x),
     y: Math.abs(mousePosition.y - rectangleCenter.y),
   };
@@ -64,7 +71,7 @@ const computeFocusRegion = (mousePosition: Point, rectangle: Rectangle) => {
 
   if (
     checkInsideRectangle(
-      pointWithRespectToCenter,
+      mousePositionWithRespectToCenter,
       cornerBoundaryRectangleWithRespectToCenter
     )
   )
@@ -83,11 +90,28 @@ const computeFocusRegion = (mousePosition: Point, rectangle: Rectangle) => {
 
   if (
     checkInsideRectangle(
-      pointWithRespectToCenter,
+      mousePositionWithRespectToCenter,
       innerRectangleWithRespectToCenter
     )
   )
     return RectangleFocusRegion.Inner;
+  if (
+    computeDistanceBetweenPoints(
+      {
+        x: 0,
+        y: height / 2,
+      },
+      mousePositionWithRespectToCenter
+    ) < PARAMETERS.dockingRadius ||
+    computeDistanceBetweenPoints(
+      {
+        x: width / 2,
+        y: 0,
+      },
+      mousePositionWithRespectToCenter
+    ) < PARAMETERS.dockingRadius
+  )
+    return RectangleFocusRegion.EdgeCenter;
 
   return RectangleFocusRegion.Edge;
 };
@@ -104,11 +128,41 @@ const interactionSlice = createSlice({
     },
     handleMouseDown: (state, action: PayloadAction<Point>) => {
       state.whileClick = true;
-      state.clickedSelectionRectangle = {
-        p1: action.payload,
-        p2: action.payload,
-      };
       state.currentMousePosition = action.payload;
+
+      if (state.mode !== InteractionMode.Connect) {
+        state.clickedSelectionRectangle = {
+          p1: state.currentMousePosition,
+          p2: state.currentMousePosition,
+        };
+      } else {
+        if (!state.focusTargetList.length) return;
+        if (state.focusTargetList[0].type === ElementType.Strategist) return;
+        const focusTarget = state.focusTargetList[0];
+        let anchorPointList: Array<Point> = [];
+        if (focusTarget)
+          anchorPointList = [
+            { x: focusTarget.x1, y: 0.5 * (focusTarget.y1 + focusTarget.y2) },
+            { x: focusTarget.x2, y: 0.5 * (focusTarget.y1 + focusTarget.y2) },
+            { x: 0.5 * (focusTarget.x1 + focusTarget.x2), y: focusTarget.y1 },
+            { x: 0.5 * (focusTarget.x1 + focusTarget.x2), y: focusTarget.y2 },
+          ];
+
+        const distanceToAnchorPointList = anchorPointList.map(
+          (point) =>
+            Math.pow(state.currentMousePosition.x - point.x, 2) +
+            Math.pow(state.currentMousePosition.y - point.y, 2)
+        );
+        const minDistance = Math.min(...distanceToAnchorPointList);
+        const closestAnchorPoint =
+          anchorPointList[distanceToAnchorPointList.indexOf(minDistance)];
+
+        state.clickedSelectionRectangle = {
+          p1: closestAnchorPoint,
+          p2: state.currentMousePosition,
+        };
+        // state.focusTargetList = [];
+      }
     },
     handleMouseMove: (
       state,
@@ -119,6 +173,8 @@ const interactionSlice = createSlice({
     ) => {
       state.currentMousePosition = action.payload.mousePosition;
       if (!state.whileClick) {
+        state.focusTargetList = [];
+
         state.mode = InteractionMode.Create;
         for (const element of action.payload.elementList) {
           const boundingRectangle = {
@@ -147,12 +203,15 @@ const interactionSlice = createSlice({
               state.mode = InteractionMode.Translate;
               break;
 
-            case RectangleFocusRegion.Edge:
-              if ("name" in element) state.mode = InteractionMode.Translate;
+            case RectangleFocusRegion.EdgeCenter:
+              if (element.type === ElementType.Strategist) break;
               else state.mode = InteractionMode.Connect;
               break;
+            case RectangleFocusRegion.Edge:
+              state.mode = InteractionMode.Translate;
+              break;
           }
-          state.focusTarget = element;
+          state.focusTargetList = [element];
         }
       }
 
@@ -177,12 +236,41 @@ const interactionSlice = createSlice({
         else if (state.mode === InteractionMode.Connect) {
           state.clickedSelectionRectangle.p2 = {
             x: action.payload.mousePosition.x,
-            y: action.payload.mousePosition.y
+            y: action.payload.mousePosition.y,
+          };
+          const connectibleElement = action.payload.elementList.find(
+            (element) => {
+              const connectibleRectangle: Rectangle = {
+                p1: {
+                  x: element.x1 - PARAMETERS.strategyConnectMargin,
+                  y: element.y1 - PARAMETERS.strategyConnectMargin,
+                },
+                p2: {
+                  x: element.x2 + PARAMETERS.strategyConnectMargin,
+                  y: element.y2 + PARAMETERS.strategyConnectMargin,
+                },
+              };
+              return (
+                element.type === ElementType.Strategist &&
+                checkInsideRectangle(
+                  action.payload.mousePosition,
+                  connectibleRectangle
+                )
+              );
+            }
+          );
+          if (!connectibleElement) {
+            if (state.focusTargetList.length === 2) state.focusTargetList.pop();
+            return;
           }
+          if (state.focusTargetList.length === 1)
+            state.focusTargetList.push(connectibleElement);
+          else state.focusTargetList[1] = connectibleElement;
         }
     },
     handleMouseUp: (state) => {
       state.whileClick = false;
+      state.mode = InteractionMode.Idle;
     },
   },
 });

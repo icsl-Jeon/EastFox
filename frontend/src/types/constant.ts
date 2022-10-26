@@ -7,5 +7,7 @@ export const PARAMETERS = {
   focusCornerThickness: 2,
   focusHighlightRectangleMargin: 3,
   focusHighlightRectangleThickness: 3,
-  minimumAreaForFilter: 200
+  minimumAreaForFilter: 200,
+  dockingRadius: 5,
+  strategyConnectMargin: 6,
 };

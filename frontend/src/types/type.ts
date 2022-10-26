@@ -3,26 +3,26 @@ export enum ElementType {
   Filter = "Filter",
 }
 
-
 export interface Segment {
   dateStart: Date;
   dateEnd: Date;
 }
 
 export interface Strategist {
-  type: ElementType.Strategist
+  type: ElementType.Strategist;
   id?: number;
-  dateStart: Date;
-  dateEnd: Date;
-  name: String;
+  dateStart: string;
+  dateEnd: string;
+  name: string;
   x1: number;
   y1: number;
   x2: number;
   y2: number;
+  pinDateList: Array<string>;
 }
 
 export interface Filter {
-  type: ElementType.Filter
+  type: ElementType.Filter;
   id?: number;
   x1: number;
   y1: number;
@@ -55,6 +55,7 @@ export enum InteractionMode {
 export enum RectangleFocusRegion {
   Inner,
   Edge,
+  EdgeCenter,
   Corner,
   Outer,
 }
@@ -64,6 +65,6 @@ export interface UserInteraction {
   whileClick: boolean;
   mode: InteractionMode;
   createTarget: ElementType;
-  focusTarget?: Strategist | Filter;
+  focusTargetList: Array<Strategist | Filter>;
   currentMousePosition: Point;
 }

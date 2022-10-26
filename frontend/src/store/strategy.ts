@@ -1,30 +1,32 @@
-import {createAsyncThunk, createSlice} from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
-import {Strategy, Strategist, ElementType} from "../types/type";
+import { Strategy, Strategist, ElementType } from "../types/type";
 
 const initialStrategy: Strategy = {
   strategistList: [],
 };
 
-export const fetchStrategy = createAsyncThunk<Array<{
-  id: number;
-  from_date: Date;
-  to_date: Date;
-  name: String;
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-}>,
+export const fetchStrategy = createAsyncThunk<
+  Array<{
+    id: number;
+    from_date: string;
+    to_date: string;
+    name: string;
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  }>,
   string,
-  { rejectValue: string }>("fetchStrategy", async (accessToken, thunkAPI) => {
+  { rejectValue: string }
+>("fetchStrategy", async (accessToken, thunkAPI) => {
   try {
     const config = {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
     };
-    const {data} = await axios.get(
+    const { data } = await axios.get(
       "http://127.0.0.1:8000/api/strategy/get_strategist_list",
       config
     );
@@ -34,15 +36,17 @@ export const fetchStrategy = createAsyncThunk<Array<{
   }
 });
 
-export const addStrategist = createAsyncThunk<{
-  success: boolean;
-  updatedStrategist: Strategist;
-},
+export const addStrategist = createAsyncThunk<
+  {
+    success: boolean;
+    updatedStrategist: Strategist;
+  },
   {
     accessToken: string;
     newStrategist: Strategist;
   },
-  { rejectValue: string }>("addStrategist", async ({accessToken, newStrategist}, thunkAPI) => {
+  { rejectValue: string }
+>("addStrategist", async ({ accessToken, newStrategist }, thunkAPI) => {
   try {
     const config = {
       headers: {
@@ -52,8 +56,8 @@ export const addStrategist = createAsyncThunk<{
     };
 
     const body = {
-      from_date: newStrategist.dateStart.toISOString().slice(0, 10),
-      to_date: newStrategist.dateEnd.toISOString().slice(0, 10),
+      from_date: newStrategist.dateStart,
+      to_date: newStrategist.dateEnd,
       name: newStrategist.name,
       x1: newStrategist.x1,
       y1: newStrategist.y1,
@@ -61,13 +65,16 @@ export const addStrategist = createAsyncThunk<{
       y2: newStrategist.y2,
     };
 
-    const {data} = await axios.post(
+    const { data } = await axios.post(
       "http://127.0.0.1:8000/api/strategy/create_strategist",
       body,
       config
     );
 
-    return {success: true, updatedStrategist: data};
+    return {
+      success: true,
+      updatedStrategist: { ...data, type: ElementType.Strategist },
+    };
   } catch (e) {
     return thunkAPI.rejectWithValue("Add strategist failed");
   }
@@ -89,6 +96,7 @@ const strategySlice = createSlice({
         x2: item.x2,
         y1: item.y1,
         y2: item.y2,
+        pinDateList: ["1990-01-01", "2010-01-01"],
       }));
     });
     builder.addCase(fetchStrategy.rejected, (state, action) => {
@@ -97,8 +105,7 @@ const strategySlice = createSlice({
     builder.addCase(addStrategist.fulfilled, (state, action) => {
       state.strategistList.push(action.payload.updatedStrategist);
     });
-    builder.addCase(addStrategist.rejected, (state, action) => {
-    });
+    builder.addCase(addStrategist.rejected, (state, action) => {});
   },
 });
 

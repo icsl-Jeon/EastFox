@@ -85,7 +85,7 @@ def register_filter_to_strategist(request):
                 datetime.datetime.strptime(applied_date, '%Y-%m-%d').date() <= strategist.from_date:
             raise Exception(f'Filter applied date {applied_date} not included in strategist horizon.')
 
-        application = FilterApplication(strategist=strategist, filter=applied_filter,
+        application = FilterApplication(user=request.user, strategist=strategist, filter=applied_filter,
                                         applied_date=applied_date, x1=x1, y1=y1, x2=x2, y2=y2)
         application.save()
         return Response(True)

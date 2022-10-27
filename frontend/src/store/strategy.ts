@@ -6,7 +6,7 @@ const initialStrategy: Strategy = {
   strategistList: [],
 };
 
-export const fetchStrategy = createAsyncThunk<
+export const getStrategy = createAsyncThunk<
   Array<{
     id: number;
     from_date: string;
@@ -19,7 +19,7 @@ export const fetchStrategy = createAsyncThunk<
   }>,
   string,
   { rejectValue: string }
->("fetchStrategy", async (accessToken, thunkAPI) => {
+>("getStrategy", async (accessToken, thunkAPI) => {
   try {
     const config = {
       headers: {
@@ -85,7 +85,7 @@ const strategySlice = createSlice({
   initialState: initialStrategy,
   reducers: {},
   extraReducers: (builder) => {
-    builder.addCase(fetchStrategy.fulfilled, (state, action) => {
+    builder.addCase(getStrategy.fulfilled, (state, action) => {
       state.strategistList = action.payload.map((item) => ({
         type: ElementType.Strategist,
         dateStart: item.from_date,
@@ -99,7 +99,7 @@ const strategySlice = createSlice({
         pinDateList: ["1990-01-01", "2010-01-01"],
       }));
     });
-    builder.addCase(fetchStrategy.rejected, (state, action) => {
+    builder.addCase(getStrategy.rejected, (state, action) => {
       state.strategistList = [];
     });
     builder.addCase(addStrategist.fulfilled, (state, action) => {

@@ -8,20 +8,26 @@ import React, {
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, AppState } from "../store/store";
-import { addStrategist, fetchStrategy } from "../store/strategy";
+import { addStrategist, getStrategy } from "../store/strategy";
+import { addFilter, getFilterList } from "../store/filter";
+import {
+  addFilterApplication,
+  getFilterApplicationList,
+} from "../store/filterApplication";
+
 import interactionSlice from "../store/interaction";
 import { Status } from "../store/login";
 import { PARAMETERS } from "../types/constant";
 import {
   ElementType,
   Filter,
+  FilterApplication,
   InteractionMode,
   Point,
   Strategist,
 } from "../types/type";
 import ElementResizeListener from "./ElementResizeListener";
 import { renderFilterList, renderInteraction, renderStrategy } from "./Render";
-import { addFilter, fetchFilter } from "../store/filter";
 
 const convertPinDateListToPointList = (strategist: Strategist) => {
   const dateStart = new Date(strategist.dateStart);
@@ -70,8 +76,8 @@ export default function Canvas() {
 
   useEffect(() => {
     if (loginState.status === Status.Succeeded) {
-      dispatch(fetchStrategy(loginState.userInfo.access_token));
-      dispatch(fetchFilter(loginState.userInfo.access_token));
+      dispatch(getStrategy(loginState.userInfo.access_token));
+      dispatch(getFilterList(loginState.userInfo.access_token));
       dispatch(
         interactionSlice.actions.setInteractionMode(InteractionMode.Create)
       );
@@ -192,14 +198,23 @@ export default function Canvas() {
             ) < PARAMETERS.dockingRadius
         );
         if (!dockablePoint) break;
+        if (!focusTargetList[0].id || !focusTargetList[1].id) break;
         const dockableIndex = pinPointList.indexOf(dockablePoint);
-        // TODO: dispatch filter application
-        console.log(
-          "application date",
-          focusTargetList[1].pinDateList[dockableIndex]
+        const newFilterApplication: FilterApplication = {
+          filterId: focusTargetList[0].id,
+          strategistId: focusTargetList[1].id,
+          appliedDate: focusTargetList[1].pinDateList[dockableIndex],
+          x1: interactionState.clickedSelectionRectangle.p1.x,
+          y1: interactionState.clickedSelectionRectangle.p1.y,
+          x2: dockablePoint.x,
+          y2: dockablePoint.y,
+        };
+        dispatch(
+          addFilterApplication({
+            accessToken: loginState.userInfo.access_token,
+            newFilterApplication: newFilterApplication,
+          })
         );
-        console.log("from filter ", focusTargetList[0].id);
-        console.log("to strategist ", focusTargetList[1].id);
 
         break;
     }

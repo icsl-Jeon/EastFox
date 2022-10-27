@@ -68,3 +68,9 @@ export interface UserInteraction {
   focusTargetList: Array<Strategist | Filter>;
   currentMousePosition: Point;
 }
+
+export interface FilterApplication {
+  filterId: number;
+  strategistId: number;
+  appliedDate: string;
+}

@@ -2,7 +2,7 @@ import datetime
 from .models import Strategist, Filter, Segment, FilterApplication
 from fetch.models import Asset
 
-from .serializers import StrategistSerializer, FilterSerializer, SegmentSerializer
+from .serializers import *
 
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
@@ -24,6 +24,12 @@ def get_strategist_list(request):
 @permission_classes([IsAuthenticated])
 def get_filter_list(request):
     return Response(FilterSerializer(Filter.objects.filter(user=request.user), many=True).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_filter_application_list(request):
+    return Response(FilterApplicationSerializer(FilterApplication.objects.filter(user=request.user), many=True).data)
 
 
 @api_view(['POST'])
@@ -62,18 +68,25 @@ def create_filter(request):
     return Response(FilterSerializer(strategy_filter).data)
 
 
-@api_view(['GET'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def register_filter_to_strategist(request):
     try:
-        applied_filter = Filter.objects.get(id=request.GET.get('filter_id'))
-        strategist = Strategist.objects.get(id=request.GET.get('strategist_id'))
+        applied_filter = Filter.objects.get(id=request.POST.get('filter_id'))
+        strategist = Strategist.objects.get(id=request.POST.get('strategist_id'))
+        applied_date = request.POST.get('applied_date')
+        x1 = request.POST.get('x1')
+        y1 = request.POST.get('y1')
+        x2 = request.POST.get('x2')
+        y2 = request.POST.get('y2')
 
-        if applied_filter.applied_date >= strategist.to_date or applied_filter.applied_date <= strategist.from_date:
-            raise Exception('Filter applied date not included in strategist horizon.')
+        if datetime.datetime.strptime(applied_date,
+                                      '%Y-%m-%d').date() >= strategist.to_date or \
+                datetime.datetime.strptime(applied_date, '%Y-%m-%d').date() <= strategist.from_date:
+            raise Exception(f'Filter applied date {applied_date} not included in strategist horizon.')
 
         application = FilterApplication(strategist=strategist, filter=applied_filter,
-                                        applied_date=applied_filter.applied_date)
+                                        applied_date=applied_date, x1=x1, y1=y1, x2=x2, y2=y2)
         application.save()
         return Response(True)
 

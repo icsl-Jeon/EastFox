@@ -35,11 +35,17 @@ class Strategist(models.Model):
 
 class FilterApplication(models.Model):
     class Meta:
-        unique_together = ['strategist', 'filter']
+        unique_together = ['user', 'strategist', 'filter']
 
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     filter = models.ForeignKey(Filter, on_delete=models.CASCADE)
     strategist = models.ForeignKey(Strategist, on_delete=models.CASCADE)
     applied_date = models.DateField(blank=True)
+
+    x1 = models.FloatField(default=0.0, blank=False, null=False)
+    y1 = models.FloatField(default=0.0, blank=False, null=False)
+    x2 = models.FloatField(default=0.0, blank=False, null=False)
+    y2 = models.FloatField(default=0.0, blank=False, null=False)
 
 
 class Segment(models.Model):

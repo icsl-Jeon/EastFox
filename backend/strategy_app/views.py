@@ -32,6 +32,12 @@ def get_filter_application_list(request):
     return Response(FilterApplicationSerializer(FilterApplication.objects.filter(user=request.user), many=True).data)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_segment_list(request):
+    return Response(SegmentSerializer(Segment.objects.filter(user=request.user), many=True).data)
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_strategist(request):
@@ -90,11 +96,11 @@ def register_filter_to_strategist(request):
     return Response(FilterApplicationSerializer(application).data)
 
 
-@api_view(['GET'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def calculate_segment_list(request):
     try:
-        strategist = Strategist.objects.get(id=request.GET.get('strategist_id'))
+        strategist = Strategist.objects.get(id=request.POST.get('strategist_id'))
         Segment.objects.filter(strategist=strategist).delete()
 
         segment = Segment.objects.create(strategist=strategist, from_date=strategist.from_date,

@@ -1,6 +1,7 @@
 import {
   ElementType,
   Filter,
+  FilterApplication,
   InteractionMode,
   Point,
   Strategist,
@@ -209,13 +210,13 @@ export const renderStrategy = (
 
 export const renderFilterList = (
   context: CanvasRenderingContext2D | null,
-  filter_list: Array<Filter>
+  filterList: Array<Filter>
 ) => {
   if (!context) return;
   context.strokeStyle = "black";
   context.lineWidth = 2;
 
-  filter_list.forEach((filter) =>
+  filterList.forEach((filter) =>
     context.strokeRect(
       filter.x1,
       filter.y1,
@@ -223,4 +224,19 @@ export const renderFilterList = (
       filter.y2 - filter.y1
     )
   );
+};
+
+export const renderFilterApplicationList = (
+  context: CanvasRenderingContext2D | null,
+  filterApplicationList: Array<FilterApplication>
+) => {
+  if (!context) return;
+  context.strokeStyle = "black";
+  context.lineWidth = 2;
+  filterApplicationList.forEach((filterApplication) => {
+    context.beginPath();
+    context.moveTo(filterApplication.x1, filterApplication.y1);
+    context.lineTo(filterApplication.x2, filterApplication.y2);
+    context.stroke();
+  });
 };

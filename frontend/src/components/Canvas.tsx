@@ -27,7 +27,12 @@ import {
   Strategist,
 } from "../types/type";
 import ElementResizeListener from "./ElementResizeListener";
-import { renderFilterList, renderInteraction, renderStrategy } from "./Render";
+import {
+  renderFilterApplicationList,
+  renderFilterList,
+  renderInteraction,
+  renderStrategy,
+} from "./Render";
 
 const convertPinDateListToPointList = (strategist: Strategist) => {
   const dateStart = new Date(strategist.dateStart);
@@ -55,6 +60,10 @@ export default function Canvas() {
   const loginState = useSelector((state: AppState) => state.login);
   const strategyState = useSelector((state: AppState) => state.strategy);
   const filterState = useSelector((state: AppState) => state.filter);
+  const filterApplicationState = useSelector(
+    (state: AppState) => state.filterApplication
+  );
+
   const interactionState = useSelector((state: AppState) => state.interaction);
   const dispatch: AppDispatch = useDispatch();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -78,6 +87,7 @@ export default function Canvas() {
     if (loginState.status === Status.Succeeded) {
       dispatch(getStrategy(loginState.userInfo.access_token));
       dispatch(getFilterList(loginState.userInfo.access_token));
+      dispatch(getFilterApplicationList(loginState.userInfo.access_token));
       dispatch(
         interactionSlice.actions.setInteractionMode(InteractionMode.Create)
       );
@@ -100,11 +110,16 @@ export default function Canvas() {
     renderInteraction(context, interactionState);
     renderStrategy(context, strategyState);
     renderFilterList(context, filterState.filterList);
+    renderFilterApplicationList(
+      context,
+      filterApplicationState.filterApplicationList
+    );
   }, [
     canvasDimension,
     loginState,
     strategyState,
     filterState,
+    filterApplicationState,
     interactionState,
   ]);
 

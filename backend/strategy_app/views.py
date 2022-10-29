@@ -71,27 +71,23 @@ def create_filter(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def register_filter_to_strategist(request):
-    try:
-        applied_filter = Filter.objects.get(id=request.POST.get('filter_id'))
-        strategist = Strategist.objects.get(id=request.POST.get('strategist_id'))
-        applied_date = request.POST.get('applied_date')
-        x1 = request.POST.get('x1')
-        y1 = request.POST.get('y1')
-        x2 = request.POST.get('x2')
-        y2 = request.POST.get('y2')
+    applied_filter = Filter.objects.get(id=request.POST.get('filter_id'))
+    strategist = Strategist.objects.get(id=request.POST.get('strategist_id'))
+    applied_date = request.POST.get('applied_date')
+    x1 = request.POST.get('x1')
+    y1 = request.POST.get('y1')
+    x2 = request.POST.get('x2')
+    y2 = request.POST.get('y2')
 
-        if datetime.datetime.strptime(applied_date,
-                                      '%Y-%m-%d').date() >= strategist.to_date or \
-                datetime.datetime.strptime(applied_date, '%Y-%m-%d').date() <= strategist.from_date:
-            raise Exception(f'Filter applied date {applied_date} not included in strategist horizon.')
+    if datetime.datetime.strptime(applied_date,
+                                  '%Y-%m-%d').date() >= strategist.to_date or \
+            datetime.datetime.strptime(applied_date, '%Y-%m-%d').date() <= strategist.from_date:
+        raise Exception(f'Filter applied date {applied_date} not included in strategist horizon.')
 
-        application = FilterApplication(user=request.user, strategist=strategist, filter=applied_filter,
-                                        applied_date=applied_date, x1=x1, y1=y1, x2=x2, y2=y2)
-        application.save()
-        return Response(True)
-
-    except Exception as e:
-        return Response(False)
+    application = FilterApplication(user=request.user, strategist=strategist, filter=applied_filter,
+                                    applied_date=applied_date, x1=x1, y1=y1, x2=x2, y2=y2)
+    application.save()
+    return Response(FilterApplicationSerializer(application).data)
 
 
 @api_view(['GET'])

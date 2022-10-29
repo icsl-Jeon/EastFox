@@ -4,11 +4,13 @@ import strategySlice from "./strategy";
 import interactionSlice from "./interaction";
 import filterSlice from "./filter";
 import filterApplication from "./filterApplication";
+import segmentSlice from "./segment";
 
 const rootReducer = combineReducers({
   login: loginSlice.reducer,
   strategy: strategySlice.reducer,
   filter: filterSlice.reducer,
+  segment: segmentSlice.reducer,
   filterApplication: filterApplication.reducer,
   interaction: interactionSlice.reducer,
 });

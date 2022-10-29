@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, AppState } from "../store/store";
 import { addStrategist, getStrategy } from "../store/strategy";
 import { addFilter, getFilterList } from "../store/filter";
+import { getSegmentList } from "../store/segment";
 import {
   addFilterApplication,
   getFilterApplicationList,
@@ -60,6 +61,8 @@ export default function Canvas() {
   const loginState = useSelector((state: AppState) => state.login);
   const strategyState = useSelector((state: AppState) => state.strategy);
   const filterState = useSelector((state: AppState) => state.filter);
+  const segmentState = useSelector((state: AppState) => state.segment);
+
   const filterApplicationState = useSelector(
     (state: AppState) => state.filterApplication
   );
@@ -91,6 +94,7 @@ export default function Canvas() {
       dispatch(
         interactionSlice.actions.setInteractionMode(InteractionMode.Create)
       );
+      dispatch(getSegmentList(loginState.userInfo.access_token));
     }
   }, [loginState]);
 
@@ -120,6 +124,7 @@ export default function Canvas() {
     strategyState,
     filterState,
     filterApplicationState,
+    segmentState,
     interactionState,
   ]);
 

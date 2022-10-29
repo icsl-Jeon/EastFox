@@ -50,6 +50,7 @@ class FilterApplication(models.Model):
 
 class Segment(models.Model):
     id = models.AutoField(primary_key=True, editable=False)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     strategist = models.ForeignKey(Strategist, models.CASCADE, null=True)
     asset_list = models.ManyToManyField(Asset, blank=True)
     from_date = models.DateField()

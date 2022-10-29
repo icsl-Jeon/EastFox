@@ -3,11 +3,6 @@ export enum ElementType {
   Filter = "Filter",
 }
 
-export interface Segment {
-  dateStart: Date;
-  dateEnd: Date;
-}
-
 export interface Strategist {
   type: ElementType.Strategist;
   id?: number;
@@ -77,4 +72,11 @@ export interface FilterApplication {
   y1: number;
   x2: number;
   y2: number;
+}
+
+export interface Segment {
+  strategistId: number;
+  dateStart: string;
+  dateEnd: string;
+  assetList: Array<string>;
 }

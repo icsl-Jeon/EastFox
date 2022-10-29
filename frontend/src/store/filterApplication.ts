@@ -7,7 +7,15 @@ const initialFilterApplication = {
 };
 
 export const getFilterApplicationList = createAsyncThunk<
-  Array<FilterApplication>,
+  Array<{
+    filter: number;
+    strategist: number;
+    applied_date: string;
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+  }>,
   string,
   { rejectValue: string }
 >("getFilterApplicationList", async (accessToken, thunkAPI) => {
@@ -77,7 +85,15 @@ const filterSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder.addCase(getFilterApplicationList.fulfilled, (state, action) => {
-      state.filterApplicationList = action.payload;
+      state.filterApplicationList = action.payload.map((element) => ({
+        filterId: element.filter,
+        strategistId: element.strategist,
+        appliedDate: element.applied_date,
+        x1: element.x1,
+        y1: element.y1,
+        x2: element.x2,
+        y2: element.y2,
+      }));
     });
     builder.addCase(getFilterApplicationList.rejected, (state, action) => {
       state.filterApplicationList = [];

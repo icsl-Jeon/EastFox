@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, AppState } from "../store/store";
 import { addStrategist, getStrategy } from "../store/strategy";
 import { addFilter, getFilterList } from "../store/filter";
-import { getSegmentList } from "../store/segment";
+import { getSegmentList, computeSegmentForStrategist } from "../store/segment";
 import {
   addFilterApplication,
   getFilterApplicationList,
@@ -233,6 +233,13 @@ export default function Canvas() {
           addFilterApplication({
             accessToken: loginState.userInfo.access_token,
             newFilterApplication: newFilterApplication,
+          })
+        );
+
+        dispatch(
+          computeSegmentForStrategist({
+            accessToken: loginState.userInfo.access_token,
+            strategistId: newFilterApplication.strategistId,
           })
         );
 

@@ -100,11 +100,13 @@ def register_filter_to_strategist(request):
 @permission_classes([IsAuthenticated])
 def calculate_segment_list(request):
     try:
+        if len(Strategist.objects.filter(user=request.user)) == 0:
+            Response({})
         strategist = Strategist.objects.get(id=request.POST.get('strategist_id'))
         Segment.objects.filter(strategist=strategist).delete()
 
         segment = Segment.objects.create(strategist=strategist, from_date=strategist.from_date,
-                                         to_date=strategist.to_date)
+                                         to_date=strategist.to_date, user=request.user)
         segment.asset_list.add(*Asset.objects.all())
 
         ordered_filter_application = FilterApplication.objects.filter(strategist=strategist).order_by('applied_date')
@@ -114,7 +116,7 @@ def calculate_segment_list(request):
             segment.to_date = application.applied_date
             segment.save()
             segment = Segment.objects.create(strategist=strategist, from_date=application.applied_date,
-                                             to_date=strategist.to_date)
+                                             to_date=strategist.to_date, user=request.user)
         segment_list_serialized = SegmentSerializer(Segment.objects.filter(strategist=strategist), many=True).data
         return Response(segment_list_serialized)
     except Exception as e:

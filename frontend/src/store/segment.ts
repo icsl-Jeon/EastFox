@@ -30,6 +30,35 @@ export const getSegmentList = createAsyncThunk<
   }
 });
 
+export const computeSegmentForStrategist = createAsyncThunk<
+  Array<{
+    from_date: string;
+    to_date: string;
+    strategist: number;
+    asset_list: Array<string>;
+  }>,
+  { accessToken: string; strategistId: number },
+  { rejectValue: string }
+>("computeSegmentForStrategist", async (input, thunkAPI) => {
+  try {
+    const config = {
+      headers: {
+        Authorization: `Bearer ${input.accessToken}`,
+        "Content-Type": `application/x-www-form-urlencoded`,
+      },
+    };
+    const body = { strategist_id: input.strategistId };
+    const { data } = await axios.post(
+      "http://127.0.0.1:8000/api/strategy/calculate_segment_list",
+      body,
+      config
+    );
+    return data;
+  } catch (e) {
+    return thunkAPI.rejectWithValue("Fetch segment list failed");
+  }
+});
+
 const segmentSlice = createSlice({
   name: "segment",
   initialState: initialSegmentList,
@@ -46,6 +75,24 @@ const segmentSlice = createSlice({
     builder.addCase(getSegmentList.rejected, (state, action) => {
       state.segmentList = [];
     });
+    builder.addCase(computeSegmentForStrategist.fulfilled, (state, action) => {
+      console.log(action.payload);
+      state.segmentList = state.segmentList.filter(
+        (item) => item.strategistId !== action.payload[0].strategist
+      );
+      action.payload.forEach((item) =>
+        state.segmentList.push({
+          strategistId: item.strategist,
+          dateStart: item.from_date,
+          dateEnd: item.to_date,
+          assetList: item.asset_list,
+        })
+      );
+    });
+    builder.addCase(
+      computeSegmentForStrategist.rejected,
+      (state, action) => {}
+    );
   },
 });
 

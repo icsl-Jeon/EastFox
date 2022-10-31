@@ -77,17 +77,18 @@ const segmentSlice = createSlice({
     });
     builder.addCase(computeSegmentForStrategist.fulfilled, (state, action) => {
       console.log(action.payload);
-      state.segmentList = state.segmentList.filter(
+      const segmentListTemp = state.segmentList.filter(
         (item) => item.strategistId !== action.payload[0].strategist
       );
       action.payload.forEach((item) =>
-        state.segmentList.push({
+        segmentListTemp.push({
           strategistId: item.strategist,
           dateStart: item.from_date,
           dateEnd: item.to_date,
           assetList: item.asset_list,
         })
       );
+      state.segmentList = segmentListTemp;
     });
     builder.addCase(
       computeSegmentForStrategist.rejected,

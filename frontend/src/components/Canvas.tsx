@@ -27,6 +27,13 @@ import {
   Point,
   Strategist,
 } from "../types/type";
+import {
+  convertPinDateListToPointList,
+  computeDistanceBetweenPoints,
+  deriveStrategistFromInteraction,
+  deriveFilterFromInteraction,
+  deriveFilterApplicationFromInteraction,
+} from "../types/utility";
 import ElementResizeListener from "./ElementResizeListener";
 import {
   renderFilterApplicationList,
@@ -34,40 +41,18 @@ import {
   renderInteraction,
   renderStrategy,
 } from "./Render";
-
-const convertPinDateListToPointList = (strategist: Strategist) => {
-  const dateStart = new Date(strategist.dateStart);
-  const dateEnd = new Date(strategist.dateEnd);
-  const pinPointList = strategist.pinDateList.map((date) => {
-    const pinDate = new Date(date);
-    const timeDifference = pinDate.valueOf() - dateStart.valueOf();
-    const maxTimeDifference = dateEnd.valueOf() - dateStart.valueOf();
-    return {
-      x:
-        strategist.x1 +
-        (timeDifference / maxTimeDifference) * (strategist.x2 - strategist.x1),
-      y: 0.5 * (strategist.y1 + strategist.y2),
-    };
-  });
-  return pinPointList;
-};
-const computeDistanceBetweenPoints = (point1: Point, point2: Point) => {
-  return Math.sqrt(
-    Math.pow(point1.x - point2.x, 2) + Math.pow(point1.y - point2.y, 2)
-  );
-};
+import interaction from "../store/interaction";
 
 export default function Canvas() {
   const loginState = useSelector((state: AppState) => state.login);
   const strategyState = useSelector((state: AppState) => state.strategy);
   const filterState = useSelector((state: AppState) => state.filter);
-  const segmentState = useSelector((state: AppState) => state.segment);
-
   const filterApplicationState = useSelector(
     (state: AppState) => state.filterApplication
   );
-
+  const segmentState = useSelector((state: AppState) => state.segment);
   const interactionState = useSelector((state: AppState) => state.interaction);
+
   const dispatch: AppDispatch = useDispatch();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvasDimension, setCanvasDimension] = useState<{
@@ -86,19 +71,7 @@ export default function Canvas() {
     });
   }, []);
 
-  useEffect(() => {
-    if (loginState.status === Status.Succeeded) {
-      dispatch(getStrategy(loginState.userInfo.access_token));
-      dispatch(getFilterList(loginState.userInfo.access_token));
-      dispatch(getFilterApplicationList(loginState.userInfo.access_token));
-      dispatch(
-        interactionSlice.actions.setInteractionMode(InteractionMode.Create)
-      );
-      dispatch(getSegmentList(loginState.userInfo.access_token));
-    }
-  }, [loginState]);
-
-  useLayoutEffect(() => {
+  const initializeCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas || !canvas.parentElement || !canvas.getContext("2d")) return;
     const context = canvas.getContext("2d");
@@ -111,22 +84,7 @@ export default function Canvas() {
       canvas.width = canvasDimension.width;
       canvas.height = canvasDimension.height;
     }
-    renderInteraction(context, interactionState);
-    renderStrategy(context, strategyState);
-    renderFilterList(context, filterState.filterList);
-    renderFilterApplicationList(
-      context,
-      filterApplicationState.filterApplicationList
-    );
-  }, [
-    canvasDimension,
-    loginState,
-    strategyState,
-    filterState,
-    filterApplicationState,
-    segmentState,
-    interactionState,
-  ]);
+  };
 
   const getCurrentMousePointOnCanvas = (
     event: MouseEvent<HTMLCanvasElement>
@@ -140,6 +98,82 @@ export default function Canvas() {
     };
     return pointOnCanvas;
   };
+
+  const addCreatedElementFromInteraction = () => {
+    if (interactionState.createTarget === ElementType.Strategist) {
+      const strategist = deriveStrategistFromInteraction(interactionState);
+      if (!strategist) return;
+      dispatch(
+        addStrategist({
+          accessToken: loginState.userInfo.access_token,
+          newStrategist: strategist,
+        })
+      );
+    }
+    if (interactionState.createTarget === ElementType.Filter) {
+      const filter = deriveFilterFromInteraction(interactionState);
+      if (!filter) return;
+      dispatch(
+        addFilter({
+          accessToken: loginState.userInfo.access_token,
+          newFilter: filter,
+        })
+      );
+    }
+  };
+
+  const applyFilterFromInteraction = () => {
+    const newFilterApplication =
+      deriveFilterApplicationFromInteraction(interactionState);
+    if (!newFilterApplication) return;
+    dispatch(
+      addFilterApplication({
+        accessToken: loginState.userInfo.access_token,
+        newFilterApplication: newFilterApplication,
+      })
+    );
+
+    dispatch(
+      computeSegmentForStrategist({
+        accessToken: loginState.userInfo.access_token,
+        strategistId: newFilterApplication.strategistId,
+      })
+    );
+  };
+
+  useEffect(() => {
+    if (loginState.status === Status.Succeeded) {
+      dispatch(getStrategy(loginState.userInfo.access_token));
+      dispatch(getFilterList(loginState.userInfo.access_token));
+      dispatch(getFilterApplicationList(loginState.userInfo.access_token));
+      dispatch(getSegmentList(loginState.userInfo.access_token));
+
+      dispatch(
+        interactionSlice.actions.setInteractionMode(InteractionMode.Create)
+      );
+    }
+  }, [loginState]);
+
+  useLayoutEffect(() => {
+    initializeCanvas();
+    const context = canvasRef.current?.getContext("2d");
+    if (!context) return;
+    renderStrategy(context, strategyState);
+    renderFilterList(context, filterState.filterList);
+    renderFilterApplicationList(
+      context,
+      filterApplicationState.filterApplicationList
+    );
+    renderInteraction(context, interactionState);
+  }, [
+    canvasDimension,
+    loginState,
+    strategyState,
+    filterState,
+    filterApplicationState,
+    segmentState,
+    interactionState,
+  ]);
 
   const handleMouseDown = (event: MouseEvent<HTMLCanvasElement>) => {
     const pointOnCanvas = getCurrentMousePointOnCanvas(event);
@@ -164,85 +198,10 @@ export default function Canvas() {
     const modeBeforeMouseUp = interactionState.mode;
     switch (modeBeforeMouseUp) {
       case InteractionMode.Create:
-        if (interactionState.createTarget === ElementType.Strategist) {
-          const strategist: Strategist = {
-            type: ElementType.Strategist,
-            dateStart: "1980-01-01",
-            dateEnd: "2020-12-31",
-            name: `${new Date().toLocaleDateString()}`,
-            x1: interactionState.clickedSelectionRectangle.p1.x,
-            y1: interactionState.clickedSelectionRectangle.p1.y,
-            x2: interactionState.clickedSelectionRectangle.p2.x,
-            y2: interactionState.clickedSelectionRectangle.p2.y,
-            pinDateList: ["2000-01-01", "2010-01-01"],
-          };
-          dispatch(
-            addStrategist({
-              accessToken: loginState.userInfo.access_token,
-              newStrategist: strategist,
-            })
-          );
-        }
-        if (interactionState.createTarget === ElementType.Filter) {
-          const filter: Filter = {
-            type: ElementType.Filter,
-            x1: interactionState.clickedSelectionRectangle.p1.x,
-            y1: interactionState.clickedSelectionRectangle.p1.y,
-            x2: interactionState.clickedSelectionRectangle.p2.x,
-            y2: interactionState.clickedSelectionRectangle.p2.y,
-          };
-          if (
-            Math.abs((filter.x2 - filter.x1) * (filter.y2 - filter.y1)) >
-            PARAMETERS.minimumAreaForFilter
-          )
-            dispatch(
-              addFilter({
-                accessToken: loginState.userInfo.access_token,
-                newFilter: filter,
-              })
-            );
-        }
+        addCreatedElementFromInteraction();
         break;
       case InteractionMode.Connect:
-        const focusTargetList = interactionState.focusTargetList;
-        if (focusTargetList.length !== 2) break;
-        if (focusTargetList[1].type !== ElementType.Strategist) break;
-        const pinPointList: Array<Point> = convertPinDateListToPointList(
-          focusTargetList[1]
-        );
-        const dockablePoint = pinPointList.find(
-          (point) =>
-            computeDistanceBetweenPoints(
-              point,
-              interactionState.clickedSelectionRectangle.p2
-            ) < PARAMETERS.dockingRadius
-        );
-        if (!dockablePoint) break;
-        if (!focusTargetList[0].id || !focusTargetList[1].id) break;
-        const dockableIndex = pinPointList.indexOf(dockablePoint);
-        const newFilterApplication: FilterApplication = {
-          filterId: focusTargetList[0].id,
-          strategistId: focusTargetList[1].id,
-          appliedDate: focusTargetList[1].pinDateList[dockableIndex],
-          x1: interactionState.clickedSelectionRectangle.p1.x,
-          y1: interactionState.clickedSelectionRectangle.p1.y,
-          x2: dockablePoint.x,
-          y2: dockablePoint.y,
-        };
-        dispatch(
-          addFilterApplication({
-            accessToken: loginState.userInfo.access_token,
-            newFilterApplication: newFilterApplication,
-          })
-        );
-
-        dispatch(
-          computeSegmentForStrategist({
-            accessToken: loginState.userInfo.access_token,
-            strategistId: newFilterApplication.strategistId,
-          })
-        );
-
+        applyFilterFromInteraction();
         break;
     }
   };

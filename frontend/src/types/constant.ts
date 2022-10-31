@@ -8,6 +8,7 @@ export const PARAMETERS = {
   focusHighlightRectangleMargin: 3,
   focusHighlightRectangleThickness: 3,
   minimumAreaForFilter: 200,
+  minimumAreaForStrategist: 20,
   dockingRadius: 5,
   strategyConnectMargin: 6,
 };

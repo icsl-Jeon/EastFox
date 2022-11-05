@@ -62,8 +62,15 @@ export const addFilter = createAsyncThunk<
       body,
       config
     );
-
-    return { success: true, updatedFilter: data };
+    const updatedFilter: Filter = {
+      type: ElementType.Filter,
+      id: data.id,
+      x1: data.x1,
+      y1: data.y1,
+      x2: data.x2,
+      y2: data.y2,
+    };
+    return { success: true, updatedFilter: updatedFilter };
   } catch (e) {
     return thunkAPI.rejectWithValue("Add Filter failed");
   }

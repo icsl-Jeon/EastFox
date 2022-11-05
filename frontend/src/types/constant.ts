@@ -1,14 +1,21 @@
-export const PARAMETERS = {
+export const PARAM_ELEMENT = {
   elementDistributionOffsetY: 100,
-  canvasHeight: 500,
-  strategyRectangleWidth: 3,
-  strategyRectangleMinimumLength: 30,
-  focusEdgeThickness: 4,
-  focusCornerThickness: 2,
-  focusHighlightRectangleMargin: 3,
-  focusHighlightRectangleThickness: 3,
+  elementEdgeThickness: 4,
+  elementPointRadius: 3,
   minimumAreaForFilter: 200,
   minimumAreaForStrategist: 20,
-  dockingRadius: 5,
-  strategyConnectMargin: 6,
+};
+
+export const PARAM_LAYOUT = {
+  canvasHeight: 500,
+};
+
+export const PARAM_COLOR = {
+  focus: "#7bd4ed",
+  connectTarget: "#ebaf60",
+};
+
+export const PARAM_RENDER = {
+  focusThickness: 2,
+  elementPointLineWidth: 1,
 };

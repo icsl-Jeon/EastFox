@@ -27,7 +27,9 @@ export default function Toolbar() {
           value={item}
           onClick={handleButtonClick}
           variant={
-            interactionState.createTarget === item ? "primary" : "secondary"
+            interactionState.createElementType === item
+              ? "primary"
+              : "secondary"
           }
         >
           {item}

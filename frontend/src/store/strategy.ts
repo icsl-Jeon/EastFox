@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
-import { Strategy, Strategist, ElementType } from "../types/type";
+import { ElementType, Strategist, Strategy } from "../types/type";
 
 const initialStrategy: Strategy = {
   strategistList: [],
@@ -70,10 +70,21 @@ export const addStrategist = createAsyncThunk<
       body,
       config
     );
-
+    const updatedStrategist: Strategist = {
+      type: ElementType.Strategist,
+      id: data.id,
+      dateStart: data.dateStart,
+      dateEnd: data.dateEnd,
+      name: data.name,
+      x1: data.x1,
+      y1: data.y1,
+      x2: data.x2,
+      y2: data.y2,
+      pinDateList: ["1990-01-01", "2010-01-01"],
+    };
     return {
       success: true,
-      updatedStrategist: { ...data, type: ElementType.Strategist },
+      updatedStrategist: updatedStrategist,
     };
   } catch (e) {
     return thunkAPI.rejectWithValue("Add strategist failed");

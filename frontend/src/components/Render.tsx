@@ -4,80 +4,55 @@ import {
   FilterApplication,
   InteractionMode,
   Point,
-  Strategist,
   Strategy,
   UserInteraction,
 } from "../types/type";
-import { PARAMETERS } from "../types/constant";
-
-const convertPinDateListToPointList = (strategist: Strategist) => {
-  const dateStart = new Date(strategist.dateStart);
-  const dateEnd = new Date(strategist.dateEnd);
-  const pinPointList = strategist.pinDateList.map((date) => {
-    const pinDate = new Date(date);
-    const timeDifference = pinDate.valueOf() - dateStart.valueOf();
-    const maxTimeDifference = dateEnd.valueOf() - dateStart.valueOf();
-    return {
-      x:
-        strategist.x1 +
-        (timeDifference / maxTimeDifference) * (strategist.x2 - strategist.x1),
-      y: 0.5 * (strategist.y1 + strategist.y2),
-    };
-  });
-  return pinPointList;
-};
-
-const computeDistanceBetweenPoints = (point1: Point, point2: Point) => {
-  return Math.sqrt(
-    Math.pow(point1.x - point2.x, 2) + Math.pow(point1.y - point2.y, 2)
-  );
-};
+import {
+  computeDistanceBetweenPoints,
+  convertPinDateListToPointList,
+  findClosestPointFromPointList,
+  getCenterPointListFromFourSide,
+  getRectangleFromElement,
+} from "../types/utility";
+import { PARAM_COLOR, PARAM_RENDER, PARAM_ELEMENT } from "../types/constant";
 
 export const renderInteraction = (
   context: CanvasRenderingContext2D | null,
   interaction: UserInteraction
 ) => {
   if (!context) return;
-  if (!interaction.whileClick) {
-    const focusTarget = interaction.focusTargetList[0];
-    let anchorPointList: Array<Point> = [];
-    if (focusTarget)
-      anchorPointList = [
-        { x: focusTarget.x1, y: 0.5 * (focusTarget.y1 + focusTarget.y2) },
-        { x: focusTarget.x2, y: 0.5 * (focusTarget.y1 + focusTarget.y2) },
-        { x: 0.5 * (focusTarget.x1 + focusTarget.x2), y: focusTarget.y1 },
-        { x: 0.5 * (focusTarget.x1 + focusTarget.x2), y: focusTarget.y2 },
-      ];
+  if (interaction.mode === InteractionMode.Idle) return;
+
+  interaction.focusedElementList.forEach((element) => {
+    context.strokeStyle = PARAM_COLOR.focus;
+    context.lineWidth = PARAM_RENDER.focusThickness;
+    const elementRectangle = getRectangleFromElement(element);
+    context.strokeRect(
+      elementRectangle.p1.x,
+      elementRectangle.p1.y,
+      elementRectangle.p2.x - elementRectangle.p1.x,
+      elementRectangle.p2.y - elementRectangle.p1.y
+    );
+  });
+
+  if (!interaction.isClicked) {
+    const focusTarget = interaction.focusedElementList[0];
+
     switch (interaction.mode) {
       case InteractionMode.Translate:
-        if (!focusTarget) return;
-        context.strokeStyle = "#7bd4ed";
-        context.lineWidth = PARAMETERS.focusHighlightRectangleThickness;
-        const margin = PARAMETERS.focusHighlightRectangleMargin;
-        const p1 = {
-          x: Math.min(focusTarget.x1, focusTarget.x2),
-          y: Math.min(focusTarget.y1, focusTarget.y2),
-        };
-        const p2 = {
-          x: Math.max(focusTarget.x1, focusTarget.x2),
-          y: Math.max(focusTarget.y1, focusTarget.y2),
-        };
-        context.strokeRect(
-          p1.x - margin,
-          p1.y - margin,
-          p2.x - p1.x + 2 * margin,
-          p2.y - p1.y + 2 * margin
-        );
         if (focusTarget.type === ElementType.Strategist) return;
 
-        context.strokeStyle = "orange";
+        const anchorPointList = getCenterPointListFromFourSide(
+          getRectangleFromElement(focusTarget)
+        );
         anchorPointList.forEach((point) => {
-          context.lineWidth = 2;
+          context.strokeStyle = "black";
+          context.lineWidth = PARAM_RENDER.elementPointLineWidth;
           context.beginPath();
           context.arc(
             point.x,
             point.y,
-            PARAMETERS.dockingRadius,
+            PARAM_ELEMENT.elementPointRadius,
             0,
             2 * Math.PI
           );
@@ -86,22 +61,18 @@ export const renderInteraction = (
         break;
 
       case InteractionMode.Connect:
-        context.strokeStyle = "orange";
         const mousePosition: Point = interaction.currentMousePosition;
-        const distanceToAnchorPointList = anchorPointList.map(
-          (point) =>
-            Math.pow(mousePosition.x - point.x, 2) +
-            Math.pow(mousePosition.y - point.y, 2)
+        const closestAnchorPoint = findClosestPointFromPointList(
+          mousePosition,
+          getCenterPointListFromFourSide(getRectangleFromElement(focusTarget))
         );
-        const minDistance = Math.min(...distanceToAnchorPointList);
-        const closestAnchorPoint =
-          anchorPointList[distanceToAnchorPointList.indexOf(minDistance)];
-        context.lineWidth = 3;
+
+        context.strokeStyle = "black";
         context.beginPath();
         context.arc(
           closestAnchorPoint.x,
           closestAnchorPoint.y,
-          PARAMETERS.dockingRadius,
+          PARAM_ELEMENT.elementPointRadius,
           0,
           2 * Math.PI
         );
@@ -110,22 +81,11 @@ export const renderInteraction = (
     }
   }
 
-  if (interaction.whileClick) {
+  if (interaction.isClicked) {
     switch (interaction.mode) {
-      case InteractionMode.Create:
-        context.globalAlpha = 0.2;
-        context.fillRect(
-          interaction.clickedSelectionRectangle.p1.x,
-          interaction.clickedSelectionRectangle.p1.y,
-          interaction.clickedSelectionRectangle.p2.x -
-            interaction.clickedSelectionRectangle.p1.x,
-          interaction.clickedSelectionRectangle.p2.y -
-            interaction.clickedSelectionRectangle.p1.y
-        );
-        context.globalAlpha = 1;
-        break;
-
       case InteractionMode.Connect:
+        context.strokeStyle = "black";
+        context.lineWidth = 2;
         context.beginPath();
         context.moveTo(
           interaction.clickedSelectionRectangle.p1.x,
@@ -136,53 +96,52 @@ export const renderInteraction = (
           interaction.clickedSelectionRectangle.p2.y
         );
         context.stroke();
-        const focusTarget = interaction.focusTargetList[1];
 
-        if (focusTarget) {
-          if (focusTarget.type !== ElementType.Strategist) return;
-          context.strokeStyle = "#ebaf60";
-          context.lineWidth = PARAMETERS.focusHighlightRectangleThickness;
-          const margin = PARAMETERS.strategyConnectMargin;
-          const p1 = {
-            x: Math.min(focusTarget.x1, focusTarget.x2),
-            y: Math.min(focusTarget.y1, focusTarget.y2),
-          };
-          const p2 = {
-            x: Math.max(focusTarget.x1, focusTarget.x2),
-            y: Math.max(focusTarget.y1, focusTarget.y2),
-          };
-          context.strokeRect(
-            p1.x - margin,
-            p1.y - margin,
-            p2.x - p1.x + 2 * margin,
-            p2.y - p1.y + 2 * margin
+        const connectTargetStrategist = interaction.focusedElementList[1];
+        if (connectTargetStrategist) {
+          if (connectTargetStrategist.type !== ElementType.Strategist) return;
+
+          const connectTargetRectangle = getRectangleFromElement(
+            connectTargetStrategist
           );
-          const pinPointList: Array<Point> =
-            convertPinDateListToPointList(focusTarget);
+
+          context.strokeStyle = PARAM_COLOR.connectTarget;
+          context.lineWidth = PARAM_RENDER.focusThickness;
+          context.strokeRect(
+            connectTargetRectangle.p1.x,
+            connectTargetRectangle.p1.y,
+            connectTargetRectangle.p2.x - connectTargetRectangle.p1.x,
+            connectTargetRectangle.p2.y - connectTargetRectangle.p1.y
+          );
+          const pinPointList: Array<Point> = convertPinDateListToPointList(
+            connectTargetStrategist
+          );
+          context.strokeStyle = "black";
           pinPointList.forEach((point) => {
             context.beginPath();
             context.arc(
               point.x,
               point.y,
-              PARAMETERS.dockingRadius,
+              PARAM_ELEMENT.elementPointRadius,
               0,
               2 * Math.PI
             );
             context.stroke();
           });
+
           const dockablePoint = pinPointList.find(
             (point) =>
               computeDistanceBetweenPoints(
                 point,
-                interaction.clickedSelectionRectangle.p2
-              ) < PARAMETERS.dockingRadius
+                interaction.currentMousePosition
+              ) < PARAM_ELEMENT.elementPointRadius
           );
           if (dockablePoint) {
             context.beginPath();
             context.arc(
               dockablePoint.x,
               dockablePoint.y,
-              PARAMETERS.dockingRadius,
+              PARAM_ELEMENT.elementPointRadius,
               0,
               2 * Math.PI
             );

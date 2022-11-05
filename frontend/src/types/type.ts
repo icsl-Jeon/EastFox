@@ -57,10 +57,10 @@ export enum RectangleFocusRegion {
 
 export interface UserInteraction {
   clickedSelectionRectangle: Rectangle;
-  whileClick: boolean;
+  isClicked: boolean;
   mode: InteractionMode;
-  createTarget: ElementType;
-  focusTargetList: Array<Strategist | Filter>;
+  createElementType: ElementType;
+  focusedElementList: Array<Strategist | Filter>;
   currentMousePosition: Point;
 }
 

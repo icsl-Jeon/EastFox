@@ -71,8 +71,19 @@ export const addFilterApplication = createAsyncThunk<
         body,
         config
       );
-
-      return { success: true, updatedFilterApplication: data };
+      const updatedFilterApplication: FilterApplication = {
+        filterId: data.filter,
+        strategistId: data.strategist,
+        appliedDate: data.applied_date,
+        x1: data.x1,
+        y1: data.y1,
+        x2: data.x2,
+        y2: data.y2,
+      };
+      return {
+        success: true,
+        updatedFilterApplication: updatedFilterApplication,
+      };
     } catch (e) {
       return thunkAPI.rejectWithValue("Add Filter application failed");
     }

@@ -18,21 +18,13 @@ import {
 
 import interactionSlice from "../store/interaction";
 import { Status } from "../store/login";
-import { PARAMETERS } from "../types/constant";
+import { PARAM_ELEMENT, PARAM_LAYOUT } from "../types/constant";
+import { ElementType, InteractionMode } from "../types/type";
 import {
-  ElementType,
-  Filter,
-  FilterApplication,
-  InteractionMode,
-  Point,
-  Strategist,
-} from "../types/type";
-import {
-  convertPinDateListToPointList,
-  computeDistanceBetweenPoints,
   deriveStrategistFromInteraction,
   deriveFilterFromInteraction,
   deriveFilterApplicationFromInteraction,
+  getCurrentMousePointOnCanvas,
 } from "../types/utility";
 import ElementResizeListener from "./ElementResizeListener";
 import {
@@ -41,7 +33,6 @@ import {
   renderInteraction,
   renderStrategy,
 } from "./Render";
-import interaction from "../store/interaction";
 
 export default function Canvas() {
   const loginState = useSelector((state: AppState) => state.login);
@@ -67,7 +58,7 @@ export default function Canvas() {
     const elmRect = canvas.parentElement.getBoundingClientRect();
     setCanvasDimension({
       width: elmRect.width,
-      height: PARAMETERS.canvasHeight,
+      height: PARAM_LAYOUT.canvasHeight,
     });
   }, []);
 
@@ -79,28 +70,15 @@ export default function Canvas() {
 
     if (canvasDimension.height === 0) {
       canvas.width = canvas.parentElement.getBoundingClientRect().width;
-      canvas.height = PARAMETERS.canvasHeight;
+      canvas.height = PARAM_LAYOUT.canvasHeight;
     } else {
       canvas.width = canvasDimension.width;
       canvas.height = canvasDimension.height;
     }
   };
 
-  const getCurrentMousePointOnCanvas = (
-    event: MouseEvent<HTMLCanvasElement>
-  ) => {
-    if (!canvasRef.current) return { x: -1, y: -1 };
-    const { clientX, clientY } = event;
-    const boundingRect = canvasRef.current.getBoundingClientRect();
-    const pointOnCanvas: Point = {
-      x: clientX - boundingRect.left,
-      y: clientY - boundingRect.top,
-    };
-    return pointOnCanvas;
-  };
-
-  const addCreatedElementFromInteraction = () => {
-    if (interactionState.createTarget === ElementType.Strategist) {
+  const dispatchAddElement = () => {
+    if (interactionState.createElementType === ElementType.Strategist) {
       const strategist = deriveStrategistFromInteraction(interactionState);
       if (!strategist) return;
       dispatch(
@@ -110,7 +88,7 @@ export default function Canvas() {
         })
       );
     }
-    if (interactionState.createTarget === ElementType.Filter) {
+    if (interactionState.createElementType === ElementType.Filter) {
       const filter = deriveFilterFromInteraction(interactionState);
       if (!filter) return;
       dispatch(
@@ -122,7 +100,7 @@ export default function Canvas() {
     }
   };
 
-  const applyFilterFromInteraction = () => {
+  const dispatchAddFilterApplicationAndSegment = () => {
     const newFilterApplication =
       deriveFilterApplicationFromInteraction(interactionState);
     if (!newFilterApplication) return;
@@ -176,14 +154,24 @@ export default function Canvas() {
   ]);
 
   const handleMouseDown = (event: MouseEvent<HTMLCanvasElement>) => {
-    const pointOnCanvas = getCurrentMousePointOnCanvas(event);
-    dispatch(interactionSlice.actions.handleMouseDown(pointOnCanvas));
+    if (!canvasRef.current) return;
+    const pointOnCanvas = getCurrentMousePointOnCanvas(
+      event,
+      canvasRef.current
+    );
+    dispatch(
+      interactionSlice.actions.handleMouseDownInteraction(pointOnCanvas)
+    );
   };
 
   const handleMouseMove = (event: MouseEvent<HTMLCanvasElement>) => {
-    const pointOnCanvas = getCurrentMousePointOnCanvas(event);
+    if (!canvasRef.current) return;
+    const pointOnCanvas = getCurrentMousePointOnCanvas(
+      event,
+      canvasRef.current
+    );
     dispatch(
-      interactionSlice.actions.handleMouseMove({
+      interactionSlice.actions.handleMouseMoveInteraction({
         mousePosition: pointOnCanvas,
         elementList: [
           ...strategyState.strategistList,
@@ -194,14 +182,14 @@ export default function Canvas() {
   };
 
   const handleMouseUp = (event: MouseEvent<HTMLCanvasElement>) => {
-    dispatch(interactionSlice.actions.handleMouseUp());
+    dispatch(interactionSlice.actions.handleMouseUpInteraction());
     const modeBeforeMouseUp = interactionState.mode;
     switch (modeBeforeMouseUp) {
       case InteractionMode.Create:
-        addCreatedElementFromInteraction();
+        dispatchAddElement();
         break;
       case InteractionMode.Connect:
-        applyFilterFromInteraction();
+        dispatchAddFilterApplicationAndSegment();
         break;
     }
   };

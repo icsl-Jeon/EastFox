@@ -6,7 +6,7 @@ sys.path.append('../')  # TODO: valid only when we start server at backend folde
 
 class StrategyAppConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'strategy_app'
+    name = 'interface'
 
     def ready(self):
         pass

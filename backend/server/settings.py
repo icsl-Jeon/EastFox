@@ -36,9 +36,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'strategy_app',
-    'user',
+    'core',
     'fetch',
+    'interface',
+    'user',
     'corsheaders',
     'rest_framework',
     'background_task', ]

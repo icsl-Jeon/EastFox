@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Strategist, Filter, Segment, FilterApplication
+from .models import Timeline, Screener, Segment, ScreenerApplication
 
 
 class SegmentSerializer(serializers.ModelSerializer):
@@ -9,22 +9,22 @@ class SegmentSerializer(serializers.ModelSerializer):
         exclude = []
 
 
-class FilterSerializer(serializers.ModelSerializer):
+class ScreenerSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Filter
+        model = Screener
         fields = '__all__'
         exclude = []
 
 
-class FilterApplicationSerializer(serializers.ModelSerializer):
+class ScreenerApplicationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = FilterApplication
+        model = ScreenerApplication
         fields = '__all__'
         exclude = []
 
 
-class StrategistSerializer(serializers.ModelSerializer):
+class TimelineSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Strategist
+        model = Timeline
         fields = '__all__'
         exclude = []

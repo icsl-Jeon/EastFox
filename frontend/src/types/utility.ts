@@ -1,38 +1,36 @@
 import {
   ElementType,
-  Filter,
-  FilterApplication,
   InteractionMode,
   Point,
   Rectangle,
   RectangleFocusRegion,
-  Strategist,
+  Screener,
+  ScreenerApplication,
+  Timeline,
   UserInteraction,
 } from "./type";
 import { PARAM_ELEMENT } from "./constant";
 import { MouseEvent } from "react";
 
-export const convertPinDateListToPointList = (strategist: Strategist) => {
-  const dateStart = new Date(strategist.dateStart);
-  const dateEnd = new Date(strategist.dateEnd);
-  return strategist.pinDateList.map((date) => {
+export const convertPinDateListToPointList = (timeline: Timeline) => {
+  const dateStart = new Date(timeline.dateStart);
+  const dateEnd = new Date(timeline.dateEnd);
+  return timeline.pinDateList.map((date) => {
     const pinDate = new Date(date);
     const timeDifference = pinDate.valueOf() - dateStart.valueOf();
     const maxTimeDifference = dateEnd.valueOf() - dateStart.valueOf();
     return {
       x:
-        strategist.x1 +
-        (timeDifference / maxTimeDifference) * (strategist.x2 - strategist.x1),
-      y: 0.5 * (strategist.y1 + strategist.y2),
+        timeline.x1 +
+        (timeDifference / maxTimeDifference) * (timeline.x2 - timeline.x1),
+      y: 0.5 * (timeline.y1 + timeline.y2),
     };
   });
 };
 
-export const deriveStrategistFromInteraction = (
-  interaction: UserInteraction
-) => {
-  const strategist: Strategist = {
-    type: ElementType.Strategist,
+export const deriveTimelineFromInteraction = (interaction: UserInteraction) => {
+  const timeline: Timeline = {
+    type: ElementType.Timeline,
     dateStart: "1980-01-01",
     dateEnd: "2020-12-31",
     name: `${new Date().toLocaleDateString()}`,
@@ -42,14 +40,14 @@ export const deriveStrategistFromInteraction = (
     y2: interaction.clickedSelectionRectangle.p2.y,
     pinDateList: ["2000-01-01", "2010-01-01"],
   };
-  if (strategist.x2 - strategist.x1 > PARAM_ELEMENT.minimumAreaForStrategist)
-    return strategist;
+  if (timeline.x2 - timeline.x1 > PARAM_ELEMENT.minimumAreaForTimeline)
+    return timeline;
   else return null;
 };
 
-export const deriveFilterFromInteraction = (interaction: UserInteraction) => {
-  const filter: Filter = {
-    type: ElementType.Filter,
+export const deriveScreenerFromInteraction = (interaction: UserInteraction) => {
+  const screener: Screener = {
+    type: ElementType.Screener,
     x1: interaction.clickedSelectionRectangle.p1.x,
     y1: interaction.clickedSelectionRectangle.p1.y,
     x2: interaction.clickedSelectionRectangle.p2.x,
@@ -57,19 +55,19 @@ export const deriveFilterFromInteraction = (interaction: UserInteraction) => {
   };
 
   if (
-    Math.abs((filter.x2 - filter.x1) * (filter.y2 - filter.y1)) >
-    PARAM_ELEMENT.minimumAreaForFilter
+    Math.abs((screener.x2 - screener.x1) * (screener.y2 - screener.y1)) >
+    PARAM_ELEMENT.minimumAreaForScreener
   )
-    return filter;
+    return screener;
   else return null;
 };
 
-export const deriveFilterApplicationFromInteraction = (
+export const deriveScreenerApplicationFromInteraction = (
   interaction: UserInteraction
 ) => {
   const focusTargetList = interaction.focusedElementList;
   if (focusTargetList.length !== 2) return null;
-  if (focusTargetList[1].type !== ElementType.Strategist) return null;
+  if (focusTargetList[1].type !== ElementType.Timeline) return null;
   const pinPointList: Array<Point> = convertPinDateListToPointList(
     focusTargetList[1]
   );
@@ -84,16 +82,17 @@ export const deriveFilterApplicationFromInteraction = (
   if (!dockablePoint) return null;
   if (!focusTargetList[0].id || !focusTargetList[1].id) return null;
   const dockableIndex = pinPointList.indexOf(dockablePoint);
-  const newFilterApplication: FilterApplication = {
-    filterId: focusTargetList[0].id,
-    strategistId: focusTargetList[1].id,
+  const newScreenerApplication: ScreenerApplication = {
+    type: ElementType.ScreenerApplication,
+    screenerId: focusTargetList[0].id,
+    timelineId: focusTargetList[1].id,
     appliedDate: focusTargetList[1].pinDateList[dockableIndex],
     x1: interaction.clickedSelectionRectangle.p1.x,
     y1: interaction.clickedSelectionRectangle.p1.y,
     x2: dockablePoint.x,
     y2: dockablePoint.y,
   };
-  return newFilterApplication;
+  return newScreenerApplication;
 };
 
 export const checkInsideRectangle = (
@@ -199,7 +198,7 @@ export const computeFocusRegion = (
   return RectangleFocusRegion.Edge;
 };
 
-export const getRectangleFromElement = (element: Filter | Strategist) => {
+export const getRectangleFromElement = (element: Screener | Timeline) => {
   const rectangle: Rectangle = {
     p1: {
       x: Math.min(element.x1, element.x2),
@@ -249,11 +248,11 @@ export const findClosestPointFromPointList = (
 
 export const deriveInteractionModeFromHoverMousePosition = (
   hoverMousePosition: Point,
-  element: Filter | Strategist
+  element: Screener | Timeline
 ) => {
   const elementRectangle = getRectangleFromElement(element);
   const focusRegion = computeFocusRegion(hoverMousePosition, elementRectangle);
-  if (element.type === ElementType.Strategist) {
+  if (element.type === ElementType.Timeline) {
     switch (focusRegion) {
       case RectangleFocusRegion.Corner:
         return InteractionMode.Reshape;
@@ -264,7 +263,7 @@ export const deriveInteractionModeFromHoverMousePosition = (
       default:
         return InteractionMode.Idle;
     }
-  } else if (element.type === ElementType.Filter) {
+  } else if (element.type === ElementType.Screener) {
     switch (focusRegion) {
       case RectangleFocusRegion.Corner:
         return InteractionMode.Reshape;

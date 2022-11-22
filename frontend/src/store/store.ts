@@ -1,17 +1,17 @@
 import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import loginSlice from "./login";
-import strategySlice from "./strategy";
+import timelineSlice from "./timeline";
 import interactionSlice from "./interaction";
-import filterSlice from "./filter";
-import filterApplication from "./filterApplication";
+import screenerSlice from "./screener";
+import screenerApplication from "./screenerApplication";
 import segmentSlice from "./segment";
 
 const rootReducer = combineReducers({
   login: loginSlice.reducer,
-  strategy: strategySlice.reducer,
-  filter: filterSlice.reducer,
+  timeline: timelineSlice.reducer,
+  screener: screenerSlice.reducer,
   segment: segmentSlice.reducer,
-  filterApplication: filterApplication.reducer,
+  screenerApplication: screenerApplication.reducer,
   interaction: interactionSlice.reducer,
 });
 

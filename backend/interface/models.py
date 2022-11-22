@@ -19,7 +19,7 @@ class Screener(models.Model):
 
 
 class Timeline(models.Model):
-    id = models.AutoField(primary_key=True, editable=False)  # NOTE: id does not create until strategist.save()
+    id = models.AutoField(primary_key=True, editable=False)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     from_date = models.DateField()
@@ -36,6 +36,8 @@ class Timeline(models.Model):
 class ScreenerApplication(models.Model):
     class Meta:
         unique_together = ['user', 'timeline', 'screener', 'applied_date']
+
+    id = models.AutoField(primary_key=True, editable=False)
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     screener = models.ForeignKey(Screener, on_delete=models.CASCADE)

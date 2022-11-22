@@ -8,38 +8,43 @@ import React, {
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, AppState } from "../store/store";
-import { addStrategist, getStrategy } from "../store/strategy";
-import { addFilter, getFilterList } from "../store/filter";
-import { getSegmentList, computeSegmentForStrategist } from "../store/segment";
+
+import { createTimeline, readTimelineList } from "../store/timeline";
+import { createScreener, readScreenerList } from "../store/screener";
 import {
-  addFilterApplication,
-  getFilterApplicationList,
-} from "../store/filterApplication";
+  readSegmentList,
+  updateSegmentListForTimeline,
+} from "../store/segment";
+import {
+  createScreenerApplication,
+  readScreenerApplicationList,
+} from "../store/screenerApplication";
 
 import interactionSlice from "../store/interaction";
 import { Status } from "../store/login";
-import { PARAM_ELEMENT, PARAM_LAYOUT } from "../types/constant";
+import { PARAM_LAYOUT } from "../types/constant";
 import { ElementType, InteractionMode } from "../types/type";
+
 import {
-  deriveStrategistFromInteraction,
-  deriveFilterFromInteraction,
-  deriveFilterApplicationFromInteraction,
+  deriveTimelineFromInteraction,
+  deriveScreenerFromInteraction,
+  deriveScreenerApplicationFromInteraction,
   getCurrentMousePointOnCanvas,
 } from "../types/utility";
 import ElementResizeListener from "./ElementResizeListener";
 import {
-  renderFilterApplicationList,
-  renderFilterList,
+  renderScreenerApplicationList,
+  renderScreenerList,
   renderInteraction,
-  renderStrategy,
+  renderTimelineList,
 } from "./Render";
 
 export default function Canvas() {
   const loginState = useSelector((state: AppState) => state.login);
-  const strategyState = useSelector((state: AppState) => state.strategy);
-  const filterState = useSelector((state: AppState) => state.filter);
-  const filterApplicationState = useSelector(
-    (state: AppState) => state.filterApplication
+  const timelineState = useSelector((state: AppState) => state.timeline);
+  const screenerState = useSelector((state: AppState) => state.screener);
+  const screenerApplicationState = useSelector(
+    (state: AppState) => state.screenerApplication
   );
   const segmentState = useSelector((state: AppState) => state.segment);
   const interactionState = useSelector((state: AppState) => state.interaction);
@@ -77,57 +82,59 @@ export default function Canvas() {
     }
   };
 
-  const dispatchAddElement = () => {
-    if (interactionState.createElementType === ElementType.Strategist) {
-      const strategist = deriveStrategistFromInteraction(interactionState);
-      if (!strategist) return;
+  const dispatchCreateElementFromCreateTargetSelector = () => {
+    if (interactionState.createElementType === ElementType.Timeline) {
+      const timeline = deriveTimelineFromInteraction(interactionState);
+      if (!timeline) return;
       dispatch(
-        addStrategist({
+        createTimeline({
           accessToken: loginState.userInfo.access_token,
-          newStrategist: strategist,
+          newTimeline: timeline,
         })
       );
     }
-    if (interactionState.createElementType === ElementType.Filter) {
-      const filter = deriveFilterFromInteraction(interactionState);
-      if (!filter) return;
+    if (interactionState.createElementType === ElementType.Screener) {
+      const screener = deriveScreenerFromInteraction(interactionState);
+      if (!screener) return;
       dispatch(
-        addFilter({
+        createScreener({
           accessToken: loginState.userInfo.access_token,
-          newFilter: filter,
+          newScreener: screener,
         })
       );
     }
   };
 
-  const dispatchAddFilterApplicationAndSegment = () => {
-    const newFilterApplication =
-      deriveFilterApplicationFromInteraction(interactionState);
-    if (!newFilterApplication) return;
+  const dispatchCreateScreenerApplicationAndUpdateSegment = () => {
+    const newScreenerApplication =
+      deriveScreenerApplicationFromInteraction(interactionState);
+    if (!newScreenerApplication) return;
     dispatch(
-      addFilterApplication({
+      createScreenerApplication({
         accessToken: loginState.userInfo.access_token,
-        newFilterApplication: newFilterApplication,
+        newScreenerApplication: newScreenerApplication,
       })
     );
 
+    dispatch(readScreenerApplicationList(loginState.userInfo.access_token));
+
     dispatch(
-      computeSegmentForStrategist({
+      updateSegmentListForTimeline({
         accessToken: loginState.userInfo.access_token,
-        strategistId: newFilterApplication.strategistId,
+        timelineId: newScreenerApplication.timelineId,
       })
     );
   };
 
   useEffect(() => {
     if (loginState.status === Status.Succeeded) {
-      dispatch(getStrategy(loginState.userInfo.access_token));
-      dispatch(getFilterList(loginState.userInfo.access_token));
-      dispatch(getFilterApplicationList(loginState.userInfo.access_token));
-      dispatch(getSegmentList(loginState.userInfo.access_token));
+      dispatch(readTimelineList(loginState.userInfo.access_token));
+      dispatch(readScreenerList(loginState.userInfo.access_token));
+      dispatch(readScreenerApplicationList(loginState.userInfo.access_token));
+      dispatch(readSegmentList(loginState.userInfo.access_token));
 
       dispatch(
-        interactionSlice.actions.setInteractionMode(InteractionMode.Create)
+        interactionSlice.actions.setInteractionMode(InteractionMode.Idle)
       );
     }
   }, [loginState]);
@@ -136,19 +143,19 @@ export default function Canvas() {
     initializeCanvas();
     const context = canvasRef.current?.getContext("2d");
     if (!context) return;
-    renderStrategy(context, strategyState);
-    renderFilterList(context, filterState.filterList);
-    renderFilterApplicationList(
+    renderTimelineList(context, timelineState);
+    renderScreenerList(context, screenerState.screenerList);
+    renderScreenerApplicationList(
       context,
-      filterApplicationState.filterApplicationList
+      screenerApplicationState.screenerApplicationList
     );
     renderInteraction(context, interactionState);
   }, [
     canvasDimension,
     loginState,
-    strategyState,
-    filterState,
-    filterApplicationState,
+    timelineState,
+    screenerState,
+    screenerApplicationState,
     segmentState,
     interactionState,
   ]);
@@ -174,8 +181,8 @@ export default function Canvas() {
       interactionSlice.actions.handleMouseMoveInteraction({
         mousePosition: pointOnCanvas,
         elementList: [
-          ...strategyState.strategistList,
-          ...filterState.filterList,
+          ...timelineState.timelineList,
+          ...screenerState.screenerList,
         ],
       })
     );
@@ -186,10 +193,10 @@ export default function Canvas() {
     const modeBeforeMouseUp = interactionState.mode;
     switch (modeBeforeMouseUp) {
       case InteractionMode.Create:
-        dispatchAddElement();
+        dispatchCreateElementFromCreateTargetSelector();
         break;
       case InteractionMode.Connect:
-        dispatchAddFilterApplicationAndSegment();
+        dispatchCreateScreenerApplicationAndUpdateSegment();
         break;
     }
   };

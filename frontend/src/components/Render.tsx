@@ -1,10 +1,10 @@
 import {
   ElementType,
-  Filter,
-  FilterApplication,
+  Screener,
+  ScreenerApplication,
   InteractionMode,
   Point,
-  Strategy,
+  TimeLineList,
   UserInteraction,
 } from "../types/type";
 import {
@@ -21,7 +21,6 @@ export const renderInteraction = (
   interaction: UserInteraction
 ) => {
   if (!context) return;
-  if (interaction.mode === InteractionMode.Idle) return;
 
   interaction.focusedElementList.forEach((element) => {
     context.strokeStyle = PARAM_COLOR.focus;
@@ -40,7 +39,7 @@ export const renderInteraction = (
 
     switch (interaction.mode) {
       case InteractionMode.Translate:
-        if (focusTarget.type === ElementType.Strategist) return;
+        if (focusTarget.type === ElementType.Timeline) return;
 
         const anchorPointList = getCenterPointListFromFourSide(
           getRectangleFromElement(focusTarget)
@@ -83,6 +82,17 @@ export const renderInteraction = (
 
   if (interaction.isClicked) {
     switch (interaction.mode) {
+      case InteractionMode.Idle:
+        context.strokeStyle = PARAM_COLOR.focus;
+        const selectionRectangle = interaction.clickedSelectionRectangle;
+        context.lineWidth = 1.0;
+        context.strokeRect(
+          selectionRectangle.p1.x,
+          selectionRectangle.p1.y,
+          selectionRectangle.p2.x - selectionRectangle.p1.x,
+          selectionRectangle.p2.y - selectionRectangle.p1.y
+        );
+        break;
       case InteractionMode.Connect:
         context.strokeStyle = "black";
         context.lineWidth = 2;
@@ -97,12 +107,12 @@ export const renderInteraction = (
         );
         context.stroke();
 
-        const connectTargetStrategist = interaction.focusedElementList[1];
-        if (connectTargetStrategist) {
-          if (connectTargetStrategist.type !== ElementType.Strategist) return;
+        const connectTargetTimeline = interaction.focusedElementList[1];
+        if (connectTargetTimeline) {
+          if (connectTargetTimeline.type !== ElementType.Timeline) return;
 
           const connectTargetRectangle = getRectangleFromElement(
-            connectTargetStrategist
+            connectTargetTimeline
           );
 
           context.strokeStyle = PARAM_COLOR.connectTarget;
@@ -114,7 +124,7 @@ export const renderInteraction = (
             connectTargetRectangle.p2.y - connectTargetRectangle.p1.y
           );
           const pinPointList: Array<Point> = convertPinDateListToPointList(
-            connectTargetStrategist
+            connectTargetTimeline
           );
           context.strokeStyle = "black";
           pinPointList.forEach((point) => {
@@ -148,54 +158,66 @@ export const renderInteraction = (
             context.fill();
           }
         }
+        break;
+      case InteractionMode.Create:
+        context.strokeStyle = "black";
+        const creationRectangle = interaction.clickedSelectionRectangle;
+        context.lineWidth = 1.0;
+        context.strokeRect(
+          creationRectangle.p1.x,
+          creationRectangle.p1.y,
+          creationRectangle.p2.x - creationRectangle.p1.x,
+          creationRectangle.p2.y - creationRectangle.p1.y
+        );
+        break;
     }
   }
 };
 
-export const renderStrategy = (
+export const renderTimelineList = (
   context: CanvasRenderingContext2D | null,
-  strategy: Strategy
+  timelineList: TimeLineList
 ) => {
   if (!context) return;
-  strategy.strategistList.forEach((strategist) =>
+  timelineList.timelineList.forEach((timeline) =>
     context.fillRect(
-      strategist.x1,
-      strategist.y1,
-      strategist.x2 - strategist.x1,
-      strategist.y2 - strategist.y1
+      timeline.x1,
+      timeline.y1,
+      timeline.x2 - timeline.x1,
+      timeline.y2 - timeline.y1
     )
   );
 };
 
-export const renderFilterList = (
+export const renderScreenerList = (
   context: CanvasRenderingContext2D | null,
-  filterList: Array<Filter>
+  screenerList: Array<Screener>
 ) => {
   if (!context) return;
   context.strokeStyle = "black";
   context.lineWidth = 2;
 
-  filterList.forEach((filter) =>
+  screenerList.forEach((screener) =>
     context.strokeRect(
-      filter.x1,
-      filter.y1,
-      filter.x2 - filter.x1,
-      filter.y2 - filter.y1
+      screener.x1,
+      screener.y1,
+      screener.x2 - screener.x1,
+      screener.y2 - screener.y1
     )
   );
 };
 
-export const renderFilterApplicationList = (
+export const renderScreenerApplicationList = (
   context: CanvasRenderingContext2D | null,
-  filterApplicationList: Array<FilterApplication>
+  screenerApplicationList: Array<ScreenerApplication>
 ) => {
   if (!context) return;
   context.strokeStyle = "black";
   context.lineWidth = 2;
-  filterApplicationList.forEach((filterApplication) => {
+  screenerApplicationList.forEach((screenerApplication) => {
     context.beginPath();
-    context.moveTo(filterApplication.x1, filterApplication.y1);
-    context.lineTo(filterApplication.x2, filterApplication.y2);
+    context.moveTo(screenerApplication.x1, screenerApplication.y1);
+    context.lineTo(screenerApplication.x2, screenerApplication.y2);
     context.stroke();
   });
 };

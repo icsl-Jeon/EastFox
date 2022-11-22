@@ -1,11 +1,11 @@
 import React, { useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { AppDispatch, AppState } from "../store/store";
-import { ElementType } from "../types/type";
+import { ElementType, InteractionMode } from "../types/type";
 import interactionSlice from "../store/interaction";
 import Button from "react-bootstrap/Button";
 
-export default function Toolbar() {
+export default function CreateTargetSelector() {
   const interactionState = useSelector((state: AppState) => state.interaction);
   const dispatch: AppDispatch = useDispatch();
   const handleButtonClick = (event: React.MouseEvent) => {
@@ -14,10 +14,23 @@ export default function Toolbar() {
     const elementType: ElementType =
       ElementType[value as keyof typeof ElementType];
     console.log(elementType);
-    dispatch(interactionSlice.actions.setCreateTarget(elementType));
+    if (interactionState.mode === InteractionMode.Create) {
+      if (interactionState.createElementType === elementType) {
+        dispatch(
+          interactionSlice.actions.setInteractionMode(InteractionMode.Idle)
+        );
+      } else {
+        dispatch(interactionSlice.actions.setCreateTarget(elementType));
+      }
+    } else {
+      dispatch(
+        interactionSlice.actions.setInteractionMode(InteractionMode.Create)
+      );
+      dispatch(interactionSlice.actions.setCreateTarget(elementType));
+    }
   };
 
-  const buttonType = [ElementType.Strategist, ElementType.Filter];
+  const buttonType = [ElementType.Timeline, ElementType.Screener];
   return (
     <div>
       {buttonType.map((item, index) => (
@@ -27,7 +40,8 @@ export default function Toolbar() {
           value={item}
           onClick={handleButtonClick}
           variant={
-            interactionState.createElementType === item
+            interactionState.createElementType === item &&
+            interactionState.mode === InteractionMode.Create
               ? "primary"
               : "secondary"
           }

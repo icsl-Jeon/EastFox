@@ -1,6 +1,4 @@
 import datetime
-from ..models import Timeline, Screener, Segment, ScreenerApplication
-from fetch.models import Asset
 
 from ..serializers import *
 

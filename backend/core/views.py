@@ -12,11 +12,11 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def calculate_segment_list(request):
+def update_segment_list_for_timeline(request):
     try:
         if len(Screener.objects.filter(user=request.user)) == 0:
             Response({})
-        timeline = Timeline.objects.get(id=request.POST.get('timeline_id'))
+        timeline = Timeline.objects.get(id=request.data['timeline_id'])
         Segment.objects.filter(timeline=timeline).delete()
         segment = Segment.objects.create(timeline=timeline, from_date=timeline.from_date,
                                          to_date=timeline.to_date, user=request.user)

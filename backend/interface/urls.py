@@ -10,4 +10,7 @@ urlpatterns = [
     path('read/screener_list', read.read_screener_list),
     path('read/screener_application_list', read.read_screener_application_list),
     path('read/segment_list', read.read_segment_list),
+    path('delete/timeline_list', delete.delete_timeline_list),
+    path('delete/screener_list', delete.delete_screener_list),
+    path('delete/screener_application_list', delete.delete_screener_application_list)
 ]

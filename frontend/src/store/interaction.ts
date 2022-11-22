@@ -1,10 +1,10 @@
 import {
   ElementType,
-  Filter,
   InteractionMode,
   Point,
   Rectangle,
-  Strategist,
+  Timeline,
+  Screener,
   UserInteraction,
 } from "../types/type";
 import {
@@ -16,15 +16,12 @@ import {
 } from "../types/utility";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { PARAM_ELEMENT } from "../types/constant";
-import interaction from "./interaction";
-import { AppDispatch } from "./store";
-import { useDispatch } from "react-redux";
 
 const initialInteraction: UserInteraction = {
   clickedSelectionRectangle: { p1: { x: 0, y: 0 }, p2: { x: 0, y: 0 } },
   isClicked: false,
   mode: InteractionMode.Idle,
-  createElementType: ElementType.Strategist,
+  createElementType: ElementType.Timeline,
   currentMousePosition: { x: 0, y: 0 },
   focusedElementList: [],
 };
@@ -45,9 +42,9 @@ const interactionSlice = createSlice({
       switch (state.mode) {
         case InteractionMode.Connect:
           if (state.focusedElementList.length !== 1) break;
-          const focusedFilter = state.focusedElementList[0];
-          if (focusedFilter.type !== ElementType.Filter) break;
-          const rectangle = getRectangleFromElement(focusedFilter);
+          const focusedScreener = state.focusedElementList[0];
+          if (focusedScreener.type !== ElementType.Screener) break;
+          const rectangle = getRectangleFromElement(focusedScreener);
           const anchorPointList = getCenterPointListFromFourSide(rectangle);
           const closestAnchorPoint = findClosestPointFromPointList(
             currentMousePosition,
@@ -75,7 +72,7 @@ const interactionSlice = createSlice({
       state,
       action: PayloadAction<{
         mousePosition: Point;
-        elementList: Array<Strategist | Filter>;
+        elementList: Array<Timeline | Screener>;
       }>
     ) => {
       state.currentMousePosition = action.payload.mousePosition;
@@ -87,8 +84,8 @@ const interactionSlice = createSlice({
             element
           );
           if (!interactionMode) continue;
-
-          state.mode = interactionMode;
+          if (state.mode !== InteractionMode.Create)
+            state.mode = interactionMode;
           if (interactionMode !== InteractionMode.Idle) {
             state.focusedElementList = [element];
             return;
@@ -101,17 +98,37 @@ const interactionSlice = createSlice({
         const currentClickedMousePosition = state.currentMousePosition;
         state.clickedSelectionRectangle.p2 = currentClickedMousePosition;
         switch (state.mode) {
+          case InteractionMode.Create:
+            switch (state.createElementType) {
+              case ElementType.Timeline:
+                state.clickedSelectionRectangle.p2 = {
+                  x: action.payload.mousePosition.x,
+                  y:
+                    state.clickedSelectionRectangle.p1.y +
+                    PARAM_ELEMENT.timelineThickness,
+                };
+                break;
+
+              case ElementType.Screener:
+                state.clickedSelectionRectangle.p2 = {
+                  x: action.payload.mousePosition.x,
+                  y: action.payload.mousePosition.y,
+                };
+            }
+            break;
+
           case InteractionMode.Idle:
-            console.log(
-              "Should check included elements inside selection rectangle."
-            );
+            state.clickedSelectionRectangle.p2 = {
+              x: action.payload.mousePosition.x,
+              y: action.payload.mousePosition.y,
+            };
             break;
           case InteractionMode.Connect:
-            const connectOriginFilter = state.focusedElementList[0];
-            const connectableStrategist = action.payload.elementList.find(
+            const connectOriginScreener = state.focusedElementList[0];
+            const connectableTimeline = action.payload.elementList.find(
               (element) => {
                 return (
-                  element.type === ElementType.Strategist &&
+                  element.type === ElementType.Timeline &&
                   checkInsideRectangle(
                     currentClickedMousePosition,
                     getRectangleFromElement(element),
@@ -120,16 +137,16 @@ const interactionSlice = createSlice({
                 );
               }
             );
-            state.focusedElementList = connectableStrategist
-              ? [connectOriginFilter, connectableStrategist]
-              : [connectOriginFilter];
+            state.focusedElementList = connectableTimeline
+              ? [connectOriginScreener, connectableTimeline]
+              : [connectOriginScreener];
             break;
         }
       }
     },
     handleMouseUpInteraction: (state) => {
       state.isClicked = false;
-      state.mode = InteractionMode.Idle;
+      // state.mode = InteractionMode.Idle;
     },
   },
 });

@@ -3,7 +3,7 @@ import Login from "../components/Login";
 import { useSelector } from "react-redux";
 import { AppState } from "../store/store";
 import { Status } from "../store/login";
-import Toolbar from "../components/Toolbar";
+import CreateTargetSelector from "../components/CreateTargetSelector";
 
 export default function CanvasPage() {
   const loginStatus = useSelector((state: AppState) => state.login);
@@ -16,7 +16,7 @@ export default function CanvasPage() {
         <Login />
       ) : (
         <div>
-          <Toolbar />
+          <CreateTargetSelector />
           <Canvas />
         </div>
       )}

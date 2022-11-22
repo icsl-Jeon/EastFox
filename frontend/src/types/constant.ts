@@ -2,8 +2,9 @@ export const PARAM_ELEMENT = {
   elementDistributionOffsetY: 100,
   elementEdgeThickness: 4,
   elementPointRadius: 3,
-  minimumAreaForFilter: 200,
-  minimumAreaForStrategist: 20,
+  minimumAreaForScreener: 200,
+  minimumAreaForTimeline: 20,
+  timelineThickness: 2,
 };
 
 export const PARAM_LAYOUT = {

@@ -85,8 +85,8 @@ export const createTimeline = createAsyncThunk<
     const createdTimeline: Timeline = {
       type: ElementType.Timeline,
       id: data.id,
-      dateStart: data.dateStart,
-      dateEnd: data.dateEnd,
+      dateStart: data.from_date,
+      dateEnd: data.to_date,
       name: data.name,
       x1: data.x1,
       y1: data.y1,

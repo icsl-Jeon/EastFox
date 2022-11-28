@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 from fetch.models import Asset
 
 
-class Filter(models.Model):
+class Screener(models.Model):
     id = models.AutoField(primary_key=True, editable=False)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     x1 = models.FloatField(default=0.0, blank=False, null=False)
@@ -18,14 +18,14 @@ class Filter(models.Model):
     y2 = models.FloatField(default=0.0, blank=False, null=False)
 
 
-class Strategist(models.Model):
-    id = models.AutoField(primary_key=True, editable=False)  # NOTE: id does not create until strategist.save()
+class Timeline(models.Model):
+    id = models.AutoField(primary_key=True, editable=False)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     from_date = models.DateField()
     to_date = models.DateField()
     name = models.CharField(max_length=40)
-    filter_list = models.ManyToManyField(Filter, blank=True, through='FilterApplication')
+    screener_list = models.ManyToManyField(Screener, blank=True, through='ScreenerApplication')
 
     x1 = models.FloatField(default=0.0, blank=False, null=False)
     y1 = models.FloatField(default=0.0, blank=False, null=False)
@@ -33,13 +33,15 @@ class Strategist(models.Model):
     y2 = models.FloatField(default=0.0, blank=False, null=False)
 
 
-class FilterApplication(models.Model):
+class ScreenerApplication(models.Model):
     class Meta:
-        unique_together = ['user', 'strategist', 'filter']
+        unique_together = ['user', 'timeline', 'screener', 'applied_date']
+
+    id = models.AutoField(primary_key=True, editable=False)
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    filter = models.ForeignKey(Filter, on_delete=models.CASCADE)
-    strategist = models.ForeignKey(Strategist, on_delete=models.CASCADE)
+    screener = models.ForeignKey(Screener, on_delete=models.CASCADE)
+    timeline = models.ForeignKey(Timeline, on_delete=models.CASCADE)
     applied_date = models.DateField(blank=True)
 
     x1 = models.FloatField(default=0.0, blank=False, null=False)
@@ -51,7 +53,7 @@ class FilterApplication(models.Model):
 class Segment(models.Model):
     id = models.AutoField(primary_key=True, editable=False)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    strategist = models.ForeignKey(Strategist, models.CASCADE, null=True)
+    timeline = models.ForeignKey(Timeline, models.CASCADE, null=True)
     asset_list = models.ManyToManyField(Asset, blank=True)
     from_date = models.DateField()
     to_date = models.DateField()

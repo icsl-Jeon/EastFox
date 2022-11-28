@@ -4,16 +4,11 @@ import { Segment } from "../types/type";
 
 const initialSegmentList = { segmentList: Array<Segment>() };
 
-export const getSegmentList = createAsyncThunk<
-  Array<{
-    strategist: number;
-    asset_list: Array<string>;
-    from_date: string;
-    to_date: string;
-  }>,
+export const readSegmentList = createAsyncThunk<
+  Array<Segment>,
   string,
   { rejectValue: string }
->("getSegmentList", async (accessToken, thunkAPI) => {
+>("readSegmentList", async (accessToken, thunkAPI) => {
   try {
     const config = {
       headers: {
@@ -21,25 +16,32 @@ export const getSegmentList = createAsyncThunk<
       },
     };
     const { data } = await axios.get(
-      "http://127.0.0.1:8000/api/strategy/get_segment_list",
+      "http://127.0.0.1:8000/interface/read/segment_list",
       config
     );
-    return data;
+    return data.map(
+      (item: {
+        timeline: number;
+        asset_list: Array<string>;
+        from_date: string;
+        to_date: string;
+      }) => ({
+        timelineId: item.timeline,
+        dateStart: item.from_date,
+        dateEnd: item.to_date,
+        assetList: item.asset_list,
+      })
+    );
   } catch (e) {
-    return thunkAPI.rejectWithValue("Fetch segment list failed");
+    return thunkAPI.rejectWithValue("Read segment list failed");
   }
 });
 
-export const computeSegmentForStrategist = createAsyncThunk<
-  Array<{
-    from_date: string;
-    to_date: string;
-    strategist: number;
-    asset_list: Array<string>;
-  }>,
-  { accessToken: string; strategistId: number },
+export const updateSegmentListForTimeline = createAsyncThunk<
+  Array<Segment>,
+  { accessToken: string; timelineId: number },
   { rejectValue: string }
->("computeSegmentForStrategist", async (input, thunkAPI) => {
+>("updateSegmentListForTimeline", async (input, thunkAPI) => {
   try {
     const config = {
       headers: {
@@ -47,15 +49,28 @@ export const computeSegmentForStrategist = createAsyncThunk<
         "Content-Type": `application/x-www-form-urlencoded`,
       },
     };
-    const body = { strategist_id: input.strategistId };
+    const body = { timeline_id: input.timelineId };
     const { data } = await axios.post(
-      "http://127.0.0.1:8000/api/strategy/calculate_segment_list",
+      "http://127.0.0.1:8000/core/update_segment_list_for_timeline",
       body,
       config
     );
-    return data;
+
+    return data.map(
+      (item: {
+        timeline: number;
+        asset_list: Array<string>;
+        from_date: string;
+        to_date: string;
+      }) => ({
+        timelineId: item.timeline,
+        dateStart: item.from_date,
+        dateEnd: item.to_date,
+        assetList: item.asset_list,
+      })
+    );
   } catch (e) {
-    return thunkAPI.rejectWithValue("Fetch segment list failed");
+    return thunkAPI.rejectWithValue("Calculate segment list failed");
   }
 });
 
@@ -64,33 +79,23 @@ const segmentSlice = createSlice({
   initialState: initialSegmentList,
   reducers: {},
   extraReducers: (builder) => {
-    builder.addCase(getSegmentList.fulfilled, (state, action) => {
-      state.segmentList = action.payload.map((item) => ({
-        strategistId: item.strategist,
-        dateStart: item.from_date,
-        dateEnd: item.to_date,
-        assetList: item.asset_list,
-      }));
+    builder.addCase(readSegmentList.fulfilled, (state, action) => {
+      state.segmentList = action.payload;
     });
-    builder.addCase(getSegmentList.rejected, (state, action) => {
+    builder.addCase(readSegmentList.rejected, (state, action) => {
       state.segmentList = [];
     });
-    builder.addCase(computeSegmentForStrategist.fulfilled, (state, action) => {
-      console.log(action.payload);
-      state.segmentList = state.segmentList.filter(
-        (item) => item.strategistId !== action.payload[0].strategist
+    builder.addCase(updateSegmentListForTimeline.fulfilled, (state, action) => {
+      if (action.payload.length === 0) return;
+
+      const segmentListTemp = state.segmentList.filter(
+        (item) => item.timelineId !== action.payload[0].timelineId
       );
-      action.payload.forEach((item) =>
-        state.segmentList.push({
-          strategistId: item.strategist,
-          dateStart: item.from_date,
-          dateEnd: item.to_date,
-          assetList: item.asset_list,
-        })
-      );
+      action.payload.forEach((item) => segmentListTemp.push(item));
+      state.segmentList = segmentListTemp;
     });
     builder.addCase(
-      computeSegmentForStrategist.rejected,
+      updateSegmentListForTimeline.rejected,
       (state, action) => {}
     );
   },

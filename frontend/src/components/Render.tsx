@@ -1,83 +1,57 @@
 import {
   ElementType,
-  Filter,
-  FilterApplication,
+  Screener,
+  ScreenerApplication,
   InteractionMode,
   Point,
-  Strategist,
-  Strategy,
+  TimeLineList,
   UserInteraction,
 } from "../types/type";
-import { PARAMETERS } from "../types/constant";
-
-const convertPinDateListToPointList = (strategist: Strategist) => {
-  const dateStart = new Date(strategist.dateStart);
-  const dateEnd = new Date(strategist.dateEnd);
-  const pinPointList = strategist.pinDateList.map((date) => {
-    const pinDate = new Date(date);
-    const timeDifference = pinDate.valueOf() - dateStart.valueOf();
-    const maxTimeDifference = dateEnd.valueOf() - dateStart.valueOf();
-    return {
-      x:
-        strategist.x1 +
-        (timeDifference / maxTimeDifference) * (strategist.x2 - strategist.x1),
-      y: 0.5 * (strategist.y1 + strategist.y2),
-    };
-  });
-  return pinPointList;
-};
-
-const computeDistanceBetweenPoints = (point1: Point, point2: Point) => {
-  return Math.sqrt(
-    Math.pow(point1.x - point2.x, 2) + Math.pow(point1.y - point2.y, 2)
-  );
-};
+import {
+  computeDistanceBetweenPoints,
+  convertPinDateListToPointList,
+  findClosestPointFromPointList,
+  getCenterPointListFromFourSide,
+  getRectangleFromElement,
+} from "../types/utility";
+import { PARAM_COLOR, PARAM_RENDER, PARAM_ELEMENT } from "../types/constant";
 
 export const renderInteraction = (
   context: CanvasRenderingContext2D | null,
   interaction: UserInteraction
 ) => {
   if (!context) return;
-  if (!interaction.whileClick) {
-    const focusTarget = interaction.focusTargetList[0];
-    let anchorPointList: Array<Point> = [];
-    if (focusTarget)
-      anchorPointList = [
-        { x: focusTarget.x1, y: 0.5 * (focusTarget.y1 + focusTarget.y2) },
-        { x: focusTarget.x2, y: 0.5 * (focusTarget.y1 + focusTarget.y2) },
-        { x: 0.5 * (focusTarget.x1 + focusTarget.x2), y: focusTarget.y1 },
-        { x: 0.5 * (focusTarget.x1 + focusTarget.x2), y: focusTarget.y2 },
-      ];
+
+  interaction.focusedElementList.forEach((element) => {
+    context.strokeStyle = PARAM_COLOR.focus;
+    context.lineWidth = PARAM_RENDER.focusThickness;
+    const elementRectangle = getRectangleFromElement(element);
+    context.strokeRect(
+      elementRectangle.p1.x,
+      elementRectangle.p1.y,
+      elementRectangle.p2.x - elementRectangle.p1.x,
+      elementRectangle.p2.y - elementRectangle.p1.y
+    );
+  });
+
+  if (!interaction.isClicked) {
+    const focusTarget = interaction.focusedElementList[0];
+
     switch (interaction.mode) {
       case InteractionMode.Translate:
-        if (!focusTarget) return;
-        context.strokeStyle = "#7bd4ed";
-        context.lineWidth = PARAMETERS.focusHighlightRectangleThickness;
-        const margin = PARAMETERS.focusHighlightRectangleMargin;
-        const p1 = {
-          x: Math.min(focusTarget.x1, focusTarget.x2),
-          y: Math.min(focusTarget.y1, focusTarget.y2),
-        };
-        const p2 = {
-          x: Math.max(focusTarget.x1, focusTarget.x2),
-          y: Math.max(focusTarget.y1, focusTarget.y2),
-        };
-        context.strokeRect(
-          p1.x - margin,
-          p1.y - margin,
-          p2.x - p1.x + 2 * margin,
-          p2.y - p1.y + 2 * margin
-        );
-        if (focusTarget.type === ElementType.Strategist) return;
+        if (focusTarget.type === ElementType.Timeline) return;
 
-        context.strokeStyle = "orange";
+        const anchorPointList = getCenterPointListFromFourSide(
+          getRectangleFromElement(focusTarget)
+        );
         anchorPointList.forEach((point) => {
-          context.lineWidth = 2;
+          context.strokeStyle = "black";
+          context.lineWidth = PARAM_RENDER.elementPointLineWidth;
           context.beginPath();
           context.arc(
             point.x,
             point.y,
-            PARAMETERS.dockingRadius,
+            PARAM_ELEMENT.elementPointRadius,
             0,
             2 * Math.PI
           );
@@ -86,22 +60,18 @@ export const renderInteraction = (
         break;
 
       case InteractionMode.Connect:
-        context.strokeStyle = "orange";
         const mousePosition: Point = interaction.currentMousePosition;
-        const distanceToAnchorPointList = anchorPointList.map(
-          (point) =>
-            Math.pow(mousePosition.x - point.x, 2) +
-            Math.pow(mousePosition.y - point.y, 2)
+        const closestAnchorPoint = findClosestPointFromPointList(
+          mousePosition,
+          getCenterPointListFromFourSide(getRectangleFromElement(focusTarget))
         );
-        const minDistance = Math.min(...distanceToAnchorPointList);
-        const closestAnchorPoint =
-          anchorPointList[distanceToAnchorPointList.indexOf(minDistance)];
-        context.lineWidth = 3;
+
+        context.strokeStyle = "black";
         context.beginPath();
         context.arc(
           closestAnchorPoint.x,
           closestAnchorPoint.y,
-          PARAMETERS.dockingRadius,
+          PARAM_ELEMENT.elementPointRadius,
           0,
           2 * Math.PI
         );
@@ -110,22 +80,22 @@ export const renderInteraction = (
     }
   }
 
-  if (interaction.whileClick) {
+  if (interaction.isClicked) {
     switch (interaction.mode) {
-      case InteractionMode.Create:
-        context.globalAlpha = 0.2;
-        context.fillRect(
-          interaction.clickedSelectionRectangle.p1.x,
-          interaction.clickedSelectionRectangle.p1.y,
-          interaction.clickedSelectionRectangle.p2.x -
-            interaction.clickedSelectionRectangle.p1.x,
-          interaction.clickedSelectionRectangle.p2.y -
-            interaction.clickedSelectionRectangle.p1.y
+      case InteractionMode.Idle:
+        context.strokeStyle = PARAM_COLOR.focus;
+        const selectionRectangle = interaction.clickedSelectionRectangle;
+        context.lineWidth = 1.0;
+        context.strokeRect(
+          selectionRectangle.p1.x,
+          selectionRectangle.p1.y,
+          selectionRectangle.p2.x - selectionRectangle.p1.x,
+          selectionRectangle.p2.y - selectionRectangle.p1.y
         );
-        context.globalAlpha = 1;
         break;
-
       case InteractionMode.Connect:
+        context.strokeStyle = "black";
+        context.lineWidth = 2;
         context.beginPath();
         context.moveTo(
           interaction.clickedSelectionRectangle.p1.x,
@@ -136,107 +106,118 @@ export const renderInteraction = (
           interaction.clickedSelectionRectangle.p2.y
         );
         context.stroke();
-        const focusTarget = interaction.focusTargetList[1];
 
-        if (focusTarget) {
-          if (focusTarget.type !== ElementType.Strategist) return;
-          context.strokeStyle = "#ebaf60";
-          context.lineWidth = PARAMETERS.focusHighlightRectangleThickness;
-          const margin = PARAMETERS.strategyConnectMargin;
-          const p1 = {
-            x: Math.min(focusTarget.x1, focusTarget.x2),
-            y: Math.min(focusTarget.y1, focusTarget.y2),
-          };
-          const p2 = {
-            x: Math.max(focusTarget.x1, focusTarget.x2),
-            y: Math.max(focusTarget.y1, focusTarget.y2),
-          };
-          context.strokeRect(
-            p1.x - margin,
-            p1.y - margin,
-            p2.x - p1.x + 2 * margin,
-            p2.y - p1.y + 2 * margin
+        const connectTargetTimeline = interaction.focusedElementList[1];
+        if (connectTargetTimeline) {
+          if (connectTargetTimeline.type !== ElementType.Timeline) return;
+
+          const connectTargetRectangle = getRectangleFromElement(
+            connectTargetTimeline
           );
-          const pinPointList: Array<Point> =
-            convertPinDateListToPointList(focusTarget);
+
+          context.strokeStyle = PARAM_COLOR.connectTarget;
+          context.lineWidth = PARAM_RENDER.focusThickness;
+          context.strokeRect(
+            connectTargetRectangle.p1.x,
+            connectTargetRectangle.p1.y,
+            connectTargetRectangle.p2.x - connectTargetRectangle.p1.x,
+            connectTargetRectangle.p2.y - connectTargetRectangle.p1.y
+          );
+          const pinPointList: Array<Point> = convertPinDateListToPointList(
+            connectTargetTimeline
+          );
+          context.strokeStyle = "black";
           pinPointList.forEach((point) => {
             context.beginPath();
             context.arc(
               point.x,
               point.y,
-              PARAMETERS.dockingRadius,
+              PARAM_ELEMENT.elementPointRadius,
               0,
               2 * Math.PI
             );
             context.stroke();
           });
+
           const dockablePoint = pinPointList.find(
             (point) =>
               computeDistanceBetweenPoints(
                 point,
-                interaction.clickedSelectionRectangle.p2
-              ) < PARAMETERS.dockingRadius
+                interaction.currentMousePosition
+              ) < PARAM_ELEMENT.elementPointRadius
           );
           if (dockablePoint) {
             context.beginPath();
             context.arc(
               dockablePoint.x,
               dockablePoint.y,
-              PARAMETERS.dockingRadius,
+              PARAM_ELEMENT.elementPointRadius,
               0,
               2 * Math.PI
             );
             context.fill();
           }
         }
+        break;
+      case InteractionMode.Create:
+        context.strokeStyle = "black";
+        const creationRectangle = interaction.clickedSelectionRectangle;
+        context.lineWidth = 1.0;
+        context.strokeRect(
+          creationRectangle.p1.x,
+          creationRectangle.p1.y,
+          creationRectangle.p2.x - creationRectangle.p1.x,
+          creationRectangle.p2.y - creationRectangle.p1.y
+        );
+        break;
     }
   }
 };
 
-export const renderStrategy = (
+export const renderTimelineList = (
   context: CanvasRenderingContext2D | null,
-  strategy: Strategy
+  timelineList: TimeLineList
 ) => {
   if (!context) return;
-  strategy.strategistList.forEach((strategist) =>
+  timelineList.timelineList.forEach((timeline) =>
     context.fillRect(
-      strategist.x1,
-      strategist.y1,
-      strategist.x2 - strategist.x1,
-      strategist.y2 - strategist.y1
+      timeline.x1,
+      timeline.y1,
+      timeline.x2 - timeline.x1,
+      timeline.y2 - timeline.y1
     )
   );
 };
 
-export const renderFilterList = (
+export const renderScreenerList = (
   context: CanvasRenderingContext2D | null,
-  filterList: Array<Filter>
+  screenerList: Array<Screener>
 ) => {
   if (!context) return;
   context.strokeStyle = "black";
   context.lineWidth = 2;
 
-  filterList.forEach((filter) =>
+  screenerList.forEach((screener) =>
     context.strokeRect(
-      filter.x1,
-      filter.y1,
-      filter.x2 - filter.x1,
-      filter.y2 - filter.y1
+      screener.x1,
+      screener.y1,
+      screener.x2 - screener.x1,
+      screener.y2 - screener.y1
     )
   );
 };
 
-export const renderFilterApplicationList = (
+export const renderScreenerApplicationList = (
   context: CanvasRenderingContext2D | null,
-  filterApplicationList: Array<FilterApplication>
+  screenerApplicationList: Array<ScreenerApplication>
 ) => {
   if (!context) return;
   context.strokeStyle = "black";
   context.lineWidth = 2;
-  filterApplicationList.forEach((filterApplication) => {
+  screenerApplicationList.forEach((screenerApplication) => {
     context.beginPath();
-    context.moveTo(filterApplication.x1, filterApplication.y1);
-    context.lineTo(filterApplication.x2, filterApplication.y2);
+    context.moveTo(screenerApplication.x1, screenerApplication.y1);
+    context.lineTo(screenerApplication.x2, screenerApplication.y2);
     context.stroke();
   });
 };

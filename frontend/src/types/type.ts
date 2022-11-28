@@ -1,10 +1,11 @@
 export enum ElementType {
-  Strategist = "Strategist",
-  Filter = "Filter",
+  Timeline = "Timeline",
+  Screener = "Screener",
+  ScreenerApplication = "ScreenerApplication",
 }
 
-export interface Strategist {
-  type: ElementType.Strategist;
+export interface Timeline {
+  type: ElementType.Timeline;
   id?: number;
   dateStart: string;
   dateEnd: string;
@@ -16,8 +17,8 @@ export interface Strategist {
   pinDateList: Array<string>;
 }
 
-export interface Filter {
-  type: ElementType.Filter;
+export interface Screener {
+  type: ElementType.Screener;
   id?: number;
   x1: number;
   y1: number;
@@ -25,8 +26,8 @@ export interface Filter {
   y2: number;
 }
 
-export interface Strategy {
-  strategistList: Array<Strategist>;
+export interface TimeLineList {
+  timelineList: Array<Timeline>;
 }
 
 export interface Point {
@@ -57,16 +58,18 @@ export enum RectangleFocusRegion {
 
 export interface UserInteraction {
   clickedSelectionRectangle: Rectangle;
-  whileClick: boolean;
+  isClicked: boolean;
   mode: InteractionMode;
-  createTarget: ElementType;
-  focusTargetList: Array<Strategist | Filter>;
+  createElementType: ElementType;
+  focusedElementList: Array<Timeline | Screener>;
   currentMousePosition: Point;
 }
 
-export interface FilterApplication {
-  filterId: number;
-  strategistId: number;
+export interface ScreenerApplication {
+  type: ElementType.ScreenerApplication;
+  id?: number;
+  screenerId: number;
+  timelineId: number;
   appliedDate: string;
   x1: number;
   y1: number;
@@ -75,7 +78,7 @@ export interface FilterApplication {
 }
 
 export interface Segment {
-  strategistId: number;
+  timelineId: number;
   dateStart: string;
   dateEnd: string;
   assetList: Array<string>;

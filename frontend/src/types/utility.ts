@@ -76,8 +76,7 @@ export const deriveScreenerApplicationFromInteraction = (
       computeDistanceBetweenPoints(
         point,
         interaction.clickedSelectionRectangle.p2
-      ) <
-      PARAM_ELEMENT.elementEdgeThickness / 2
+      ) < PARAM_ELEMENT.elementPointRadius
   );
   if (!dockablePoint) return null;
   if (!focusTargetList[0].id || !focusTargetList[1].id) return null;

@@ -114,16 +114,18 @@ export default function Canvas() {
         accessToken: loginState.userInfo.access_token,
         newScreenerApplication: newScreenerApplication,
       })
-    );
-
-    dispatch(readScreenerApplicationList(loginState.userInfo.access_token));
-
-    dispatch(
-      updateSegmentListForTimeline({
-        accessToken: loginState.userInfo.access_token,
-        timelineId: newScreenerApplication.timelineId,
+    )
+      .then((result) => {
+        dispatch(readScreenerApplicationList(loginState.userInfo.access_token));
       })
-    );
+      .then((result) => {
+        dispatch(
+          updateSegmentListForTimeline({
+            accessToken: loginState.userInfo.access_token,
+            timelineId: newScreenerApplication.timelineId,
+          })
+        );
+      });
   };
 
   useEffect(() => {
